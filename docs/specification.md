@@ -521,13 +521,16 @@ drives the attribute.
   `runtime_fraction` / `time_fraction`), next due date(s), and current status
   badge.
 - A "Mark complete" button opening the Complete modal.
-- A per-task log table with edit/delete actions on each entry.
+- A per-task log table (date, tags, runtime, logged_by) with edit/delete
+  actions on each entry.
 
 **Master Log (`/log`)**
 
 - One row per log entry across all tasks: task name (link), maintenance date,
-  runtime hours, notes (truncated, expandable), logged_by.
+  tags (chips), runtime hours, notes (truncated, expandable), logged_by. The
+  per-task log table (§7.4 Task Detail) uses the same columns minus the task.
 - Sortable + searchable + paginated (server-side, same pattern as task list).
+  Search also matches on tag name (§8.2).
 
 ### 7.5 Modals
 

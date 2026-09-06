@@ -76,6 +76,17 @@ export function TaskDetailPage(props) {
       render: (/** @type {LogDTO} */ e) => formatDate(e.maintenance_date),
     },
     {
+      key: 'tags',
+      label: 'Tags',
+      className: 'cell-tags',
+      render: (/** @type {LogDTO} */ e) =>
+        e.tags && e.tags.length
+          ? html`<div class="chips">
+              ${e.tags.map((/** @type {string} */ tag) => html`<span key=${tag} class="tag">${tag}</span>`)}
+            </div>`
+          : html`<span class="muted">—</span>`,
+    },
+    {
       key: 'runtime_hours',
       label: 'Runtime',
       className: 'num',
@@ -427,25 +438,14 @@ export function TaskDetailPage(props) {
       <${Table}
         columns=${logColumns}
         rows=${logsRes.data ? logsRes.data.data : []}
-        renderDetail=${(/** @type {LogDTO} */ e) => {
-          if (!e.notes && !(e.tags && e.tags.length)) return null;
-          return html`<div class="log-notes">
-            ${
-              e.tags && e.tags.length
-                ? html`<div class="chips" style="margin-bottom:6px">
-                    ${e.tags.map((/** @type {string} */ tag) => html`<span key=${tag} class="tag">${tag}</span>`)}
-                  </div>`
-                : null
-            }
-            ${
-              e.notes
-                ? html`<div class="log-notes-body">
-                    <${MarkdownView} markdown=${e.notes} />
-                  </div>`
-                : null
-            }
-          </div>`;
-        }}
+        renderDetail=${(/** @type {LogDTO} */ e) =>
+          e.notes
+            ? html`<div class="log-notes">
+                <div class="log-notes-body">
+                  <${MarkdownView} markdown=${e.notes} />
+                </div>
+              </div>`
+            : null}
         loading=${logsRes.loading}
         emptyMessage="No maintenance logged yet."
       />
