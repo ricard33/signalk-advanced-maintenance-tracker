@@ -187,6 +187,11 @@ export class MaintenanceService {
     const dir = q.order === 'desc' ? -1 : 1;
     const byName = (a: TaskDTO, b: TaskDTO) =>
       a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+    // Final, total tiebreak: id is unique and immutable (creation order), so
+    // equal sort keys and equal names never leave the order undefined —
+    // successive requests (and pages) stay identical. Deliberately not scaled
+    // by `dir`: duplicates keep the same relative order in asc and desc.
+    const byId = (a: TaskDTO, b: TaskDTO) => a.id - b.id;
     // nulls always sort last regardless of direction
     const byNullable = (a: number | null, b: number | null) => {
       if (a == null && b == null) return 0;
@@ -197,20 +202,22 @@ export class MaintenanceService {
 
     switch (q.sort) {
       case 'name':
-        items.sort((a, b) => dir * byName(a, b));
+        items.sort((a, b) => dir * byName(a, b) || byId(a, b));
         break;
       case 'remaining_runtime':
         items.sort(
           (a, b) =>
             byNullable(a.remaining_runtime, b.remaining_runtime) ||
-            byName(a, b),
+            byName(a, b) ||
+            byId(a, b),
         );
         break;
       case 'remaining_time':
         items.sort(
           (a, b) =>
             byNullable(a.remaining_time_ms, b.remaining_time_ms) ||
-            byName(a, b),
+            byName(a, b) ||
+            byId(a, b),
         );
         break;
       case 'status':
@@ -219,7 +226,8 @@ export class MaintenanceService {
         items.sort(
           (a, b) =>
             dir * (a.status_rank - b.status_rank || b.urgency - a.urgency) ||
-            byName(a, b),
+            byName(a, b) ||
+            byId(a, b),
         );
         break;
     }

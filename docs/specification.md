@@ -489,7 +489,10 @@ drives the attribute.
   buttons are rendered only when logged in (§7.7). Logged-out visitors see the
   data and the `view` action.
 - Default sort: overdue first, then due_soon, then upcoming — driven by the
-  server's `status_rank` + remaining sort.
+  server's `status_rank` + remaining sort. Every sort is a **total order**: ties
+  on the chosen key are broken by name, then by the task's immutable id
+  (creation order), so the sequence — and the page boundaries — never shift
+  between two otherwise-identical requests (the frontend re-polls every 5 s).
 - Controls: freeform search box; tag filter (single-select chips); status filter
   (the same chips, trailing the tags — deliberately uncolored, since they are
   filter controls rather than a task's own badge); column-header sorting (name,

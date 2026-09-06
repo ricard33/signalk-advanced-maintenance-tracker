@@ -798,6 +798,83 @@ describe('task list query (§8.1)', () => {
     expect(p1.total).toBe(4);
     expect(p2.page).toBe(2);
   });
+
+  describe('stable order with duplicate names / equal sort keys', () => {
+    // Five tasks that share a name and an identical schedule — every computed
+    // sort key ties, so only the final id tiebreak keeps the order pinned.
+    function seedDupes(service: MaintenanceService) {
+      for (let i = 0; i < 5; i++) {
+        service.createTask({
+          name: 'Vidanger huile moteur',
+          time_interval: 1,
+          time_interval_unit: 'years',
+          last_maintenance: '2026-06-01T00:00:00Z',
+        });
+      }
+      // plus a couple of distinct rows so the group sits mid-list
+      service.createTask({
+        name: 'Aaa first',
+        time_interval: 1,
+        time_interval_unit: 'weeks',
+        last_maintenance: '2026-07-05T00:00:00Z',
+      });
+      service.createTask({ name: 'Zzz last' });
+    }
+    const dupeSlugs = [
+      'vidanger-huile-moteur',
+      'vidanger-huile-moteur-2',
+      'vidanger-huile-moteur-3',
+      'vidanger-huile-moteur-4',
+      'vidanger-huile-moteur-5',
+    ];
+
+    for (const sort of [
+      'status',
+      'name',
+      'remaining_time',
+      'remaining_runtime',
+    ] as const) {
+      it(`sort=${sort} is identical across repeated calls and follows creation order`, () => {
+        const { service } = makeService();
+        seedDupes(service);
+        const once = service.listTasks({ sort }).data.map((t) => t.slug);
+        const twice = service.listTasks({ sort }).data.map((t) => t.slug);
+        expect(once).toEqual(twice);
+        // the duplicate group keeps creation (id) order
+        expect(
+          once.filter((s) => s.startsWith('vidanger-huile-moteur')),
+        ).toEqual(dupeSlugs);
+      });
+    }
+
+    it('the duplicate group keeps the same relative order in asc and desc', () => {
+      const { service } = makeService();
+      seedDupes(service);
+      const asc = service
+        .listTasks({ sort: 'name', order: 'asc' })
+        .data.map((t) => t.slug)
+        .filter((s) => s.startsWith('vidanger-huile-moteur'));
+      const desc = service
+        .listTasks({ sort: 'name', order: 'desc' })
+        .data.map((t) => t.slug)
+        .filter((s) => s.startsWith('vidanger-huile-moteur'));
+      expect(asc).toEqual(dupeSlugs);
+      expect(desc).toEqual(dupeSlugs);
+    });
+
+    it('pagination cutting through the group is stable across calls', () => {
+      const { service } = makeService();
+      seedDupes(service);
+      const q = { sort: 'name', pageSize: 3 } as const;
+      const run = () =>
+        [
+          ...service.listTasks({ ...q, page: 1 }).data,
+          ...service.listTasks({ ...q, page: 2 }).data,
+          ...service.listTasks({ ...q, page: 3 }).data,
+        ].map((t) => t.slug);
+      expect(run()).toEqual(run());
+    });
+  });
 });
 
 describe('archiving', () => {

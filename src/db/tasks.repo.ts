@@ -78,7 +78,7 @@ export class TasksRepo {
 
   listAll(): TaskRow[] {
     return this.db
-      .prepare(`SELECT ${COLUMNS} FROM tasks ORDER BY name COLLATE NOCASE`)
+      .prepare(`SELECT ${COLUMNS} FROM tasks ORDER BY name COLLATE NOCASE, id`)
       .all() as unknown as TaskRow[];
   }
 
