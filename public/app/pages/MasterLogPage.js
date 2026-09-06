@@ -169,9 +169,15 @@ export function MasterLogPage() {
     });
   }
 
-  /** Notes render on their own full-width row under the entry. @param {LogDTO} e */
+  /** Tags + notes render on their own full-width row under the entry. @param {LogDTO} e */
   const renderNotes = (e) => {
-    if (!e.notes) return null;
+    const tags =
+      e.tags && e.tags.length
+        ? html`<div class="chips" style="margin-bottom:6px">
+            ${e.tags.map((/** @type {string} */ tag) => html`<span key=${tag} class="tag">${tag}</span>`)}
+          </div>`
+        : null;
+    if (!e.notes) return tags && html`<div class="log-notes">${tags}</div>`;
     const isLong = e.notes.length > NOTE_PREVIEW_CHARS;
     const body =
       expanded[e.id] || !isLong
@@ -200,6 +206,7 @@ export function MasterLogPage() {
             </button>
           `;
     return html`<div class="log-notes">
+      ${tags}
       <div class="log-notes-body">${body}</div>
     </div>`;
   };

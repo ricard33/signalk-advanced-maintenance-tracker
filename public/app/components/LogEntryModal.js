@@ -10,7 +10,8 @@ import { useState } from '../../vendor/preact-hooks.js';
 import { Modal } from './Modal.js';
 import { FormError } from './FormError.js';
 import { PlacementAllocator } from './PlacementAllocator.js';
-import { addLog, addStandaloneLog, updateLog } from '../api/hooks.js';
+import { TagInput } from './TagInput.js';
+import { addLog, addStandaloneLog, updateLog, useTags } from '../api/hooks.js';
 import { useStowageItems } from '../api/stowage.js';
 import { toDateInput } from '../lib/format.js';
 import { toast } from '../lib/toasts.js';
@@ -52,6 +53,13 @@ export function LogEntryModal(props) {
   const [notes, setNotes] = useState(
     isEdit && entry && entry.notes ? entry.notes : '',
   );
+  const [tags, setTags] = useState(
+    /** @type {string[]} */ (isEdit && entry && entry.tags ? entry.tags : []),
+  );
+  const tagsRes = useTags();
+  const tagSuggestions = (
+    tagsRes.data && tagsRes.data.data ? tagsRes.data.data : []
+  ).map((/** @type {import('../types.js').TagDTO} */ t) => t.name);
   const hasConsumables =
     !isEdit && !!task && !!task.consumables && task.consumables.length > 0;
   const [consumeStock, setConsumeStock] = useState(true);
@@ -111,6 +119,7 @@ export function LogEntryModal(props) {
       runtime_hours: null,
     };
     if (isStandalone) input.title = title.trim();
+    input.tags = tags;
     if (runtime.trim() !== '') {
       const hours = Number(runtime);
       if (!isFinite(hours) || hours < 0) {
@@ -247,6 +256,15 @@ export function LogEntryModal(props) {
               </div>`
             : null
         }
+
+        <div class="field">
+          <label class="field-label">Tags</label>
+          <${TagInput}
+            value=${tags}
+            onChange=${setTags}
+            suggestions=${tagSuggestions}
+          />
+        </div>
 
         <div class="field">
           <label class="field-label" for="log-notes">Notes (markdown)</label>

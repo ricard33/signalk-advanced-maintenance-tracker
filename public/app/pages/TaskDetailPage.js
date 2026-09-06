@@ -427,14 +427,25 @@ export function TaskDetailPage(props) {
       <${Table}
         columns=${logColumns}
         rows=${logsRes.data ? logsRes.data.data : []}
-        renderDetail=${(/** @type {LogDTO} */ e) =>
-          e.notes
-            ? html`<div class="log-notes">
-                <div class="log-notes-body">
-                  <${MarkdownView} markdown=${e.notes} />
-                </div>
-              </div>`
-            : null}
+        renderDetail=${(/** @type {LogDTO} */ e) => {
+          if (!e.notes && !(e.tags && e.tags.length)) return null;
+          return html`<div class="log-notes">
+            ${
+              e.tags && e.tags.length
+                ? html`<div class="chips" style="margin-bottom:6px">
+                    ${e.tags.map((/** @type {string} */ tag) => html`<span key=${tag} class="tag">${tag}</span>`)}
+                  </div>`
+                : null
+            }
+            ${
+              e.notes
+                ? html`<div class="log-notes-body">
+                    <${MarkdownView} markdown=${e.notes} />
+                  </div>`
+                : null
+            }
+          </div>`;
+        }}
         loading=${logsRes.loading}
         emptyMessage="No maintenance logged yet."
       />

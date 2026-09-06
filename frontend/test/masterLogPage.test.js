@@ -30,6 +30,7 @@ const logs = [
     created_at: '2026-03-04T00:00:00.000Z',
     task_slug: null,
     task_name: null,
+    tags: ['Winter', 'Yard'],
   },
 ];
 
@@ -41,6 +42,15 @@ describe('master log page (§7.4)', () => {
     await waitFor(() => expect(screen.getByText('Haul out')).toBeTruthy());
     expect(screen.getByRole('link', { name: 'Engine oil' })).toBeTruthy();
     expect(screen.queryByRole('link', { name: 'Haul out' })).toBeNull();
+  });
+
+  it("renders an entry's tags as chips", async () => {
+    mockFetch(apiRoutes({ logs }));
+    authState.value = { checked: true, isLoggedIn: false, username: null };
+    render(html`<${MasterLogPage} />`);
+    await waitFor(() => expect(screen.getByText('Haul out')).toBeTruthy());
+    expect(screen.getByText('Winter')).toBeTruthy();
+    expect(screen.getByText('Yard')).toBeTruthy();
   });
 
   it('logged out: no New Entry button or per-entry edit/delete', async () => {

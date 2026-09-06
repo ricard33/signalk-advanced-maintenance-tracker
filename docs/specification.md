@@ -227,8 +227,8 @@ Constraints/notes:
 | id     | INTEGER PK AUTOINCREMENT |                                            |
 | name   | TEXT UNIQUE NOT NULL     | case-insensitive unique (store normalized) |
 
-Tags are freeform, created on demand when assigned to a task, auto-pruned when no
-task references them.
+Tags are freeform, created on demand when assigned to a task **or a log entry**
+(§5.4a), auto-pruned when neither a task nor a log references them.
 
 ### 5.3 `task_tags`
 
@@ -237,6 +237,17 @@ task references them.
 | task_id                       | INTEGER NOT NULL FK → tasks(id) ON DELETE CASCADE |       |
 | tag_id                        | INTEGER NOT NULL FK → tags(id) ON DELETE CASCADE  |       |
 | PRIMARY KEY (task_id, tag_id) |                                                   |       |
+
+### 5.4a `log_tags`
+
+Link table (migration 8) letting log entries — task-linked or standalone — carry
+tags from the same `tags` vocabulary. Same shape as `task_tags`.
+
+| column                      | type                                                   | notes |
+| --------------------------- | ------------------------------------------------------ | ----- |
+| log_id                      | INTEGER NOT NULL FK → log_entries(id) ON DELETE CASCADE |       |
+| tag_id                      | INTEGER NOT NULL FK → tags(id) ON DELETE CASCADE        |       |
+| PRIMARY KEY (log_id, tag_id) |                                                        |       |
 
 ### 5.4 `log_entries`
 
@@ -805,9 +816,16 @@ Log create body (mark complete):
   "maintenance_date": "2026-07-08T14:30:00Z",
   "runtime_hours": 1360.0,
   "notes": "Replaced filter, topped up coolant.",
+  "tags": ["Engines", "Winter"],
   "consume_stock": true
 }
 ```
+
+`tags` is optional and wholesale-replaces the entry's tag set on create/edit
+(§5.4a, same semantics as a task's `tags`). It is accepted on
+`POST /tasks/:slug/logs`, `POST /logs` and `PUT /logs/:id`; every log response
+(single entry, per-task list, master log) includes a `tags: string[]` field.
+Master-log `search` also matches on tag name.
 
 `consume_stock` defaults to `true` when the task has linked consumables; set
 `false` to log the work without touching stowage-mgmt stock. The log entry
@@ -824,7 +842,8 @@ fields.
 | ------ | ------- | ------------------------------------------------------------ |
 | GET    | `/tags` | All tags with usage counts, for filter chips + autocomplete. |
 
-Tags are created/removed implicitly through task create/update. (A `DELETE
+Tags are created/removed implicitly through task **and log entry** create/update.
+`count` is the number of tasks plus log entries referencing the tag. (A `DELETE
 /tags/:id` may be added later for manual cleanup; v1 auto-prunes orphans.)
 
 ### 8.4 SignalK path discovery (no plugin endpoint)
