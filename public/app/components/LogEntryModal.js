@@ -53,8 +53,16 @@ export function LogEntryModal(props) {
   const [notes, setNotes] = useState(
     isEdit && entry && entry.notes ? entry.notes : '',
   );
+  // Edit keeps the entry's own tags; "Mark complete" defaults to the task's
+  // tags (editable before submit); a standalone entry starts empty.
   const [tags, setTags] = useState(
-    /** @type {string[]} */ (isEdit && entry && entry.tags ? entry.tags : []),
+    /** @type {string[]} */ (
+      isEdit && entry && entry.tags
+        ? entry.tags
+        : task && task.tags
+          ? task.tags
+          : []
+    ),
   );
   const tagsRes = useTags();
   const tagSuggestions = (

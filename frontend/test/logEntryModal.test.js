@@ -97,6 +97,31 @@ describe('LogEntryModal — mark complete (§7.5)', () => {
     expect(JSON.parse(call[1].body).tags).toEqual(['Winter']);
   });
 
+  it("defaults Mark complete tags to the task's tags and sends them", async () => {
+    const fn = mockFetch([
+      {
+        match: (m, u) =>
+          m === 'POST' && u.indexOf('/api/tasks/engine-oil-change/logs') !== -1,
+        status: 201,
+        body: { id: 9, task_slug: 'engine-oil-change', tags: ['Engines'] },
+      },
+    ]);
+    const onClose = vi.fn();
+    render(
+      html`<${LogEntryModal}
+        task=${makeTask({ tags: ['Engines', 'Port'] })}
+        onClose=${onClose}
+      />`,
+    );
+    // the task's tags show as removable chips in the input
+    expect(screen.getByText('Engines')).toBeTruthy();
+    expect(screen.getByText('Port')).toBeTruthy();
+    fireEvent.submit(document.getElementById('log-form'));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    const call = fn.mock.calls.find((c) => c[1] && c[1].method === 'POST');
+    expect(JSON.parse(call[1].body).tags).toEqual(['Engines', 'Port']);
+  });
+
   it('prefills tags when editing an existing entry', async () => {
     const fn = mockFetch([
       {

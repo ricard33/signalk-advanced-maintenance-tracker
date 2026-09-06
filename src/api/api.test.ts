@@ -372,6 +372,22 @@ describe('log endpoints', () => {
       'Engines',
     ]);
   });
+
+  it('a task log inherits the task tags when the body omits `tags`', async () => {
+    await request(app)
+      .post(`${base}/tasks`)
+      .send({ name: 'Oil', tags: ['Engines', 'Port'] });
+
+    const inherited = await request(app)
+      .post(`${base}/tasks/oil/logs`)
+      .send({ maintenance_date: '2026-07-08T14:30:00Z' });
+    expect(inherited.body.tags).toEqual(['Engines', 'Port']);
+
+    const explicit = await request(app)
+      .post(`${base}/tasks/oil/logs`)
+      .send({ maintenance_date: '2026-07-09T14:30:00Z', tags: [] });
+    expect(explicit.body.tags).toEqual([]);
+  });
 });
 
 describe('tags & health endpoints', () => {

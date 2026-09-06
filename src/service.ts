@@ -528,7 +528,11 @@ export class MaintenanceService {
         },
         nowIso,
       );
-      if (body.tags) this.tags.setLogTags(entry.id, body.tags);
+      // An omitted `tags` inherits the task's tags; an explicit list (including
+      // []) is taken as given.
+      const logTags =
+        body.tags !== undefined ? body.tags : this.tags.tagsForTask(task.id);
+      if (logTags.length) this.tags.setLogTags(entry.id, logTags);
       this.recomputeDenorm(task.id);
       // A one-time due date is a deadline for a single completion — once the
       // task is done, the deadline no longer applies. (A recurring renewal's

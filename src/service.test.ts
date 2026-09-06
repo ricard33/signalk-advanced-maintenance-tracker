@@ -362,6 +362,35 @@ describe('log tags', () => {
     ]);
   });
 
+  it('inherits the task tags when addLog omits tags, but honours an explicit list', async () => {
+    const { service } = makeService();
+    service.createTask({ name: 'Engine', tags: ['Engines', 'Port'] });
+
+    // omitted → inherits
+    const inherited = await service.addLog(
+      'engine',
+      { maintenance_date: '2026-07-01T00:00:00Z' },
+      'admin',
+    );
+    expect(inherited.tags).toEqual(['Engines', 'Port']);
+
+    // explicit [] → no tags
+    const cleared = await service.addLog(
+      'engine',
+      { maintenance_date: '2026-07-02T00:00:00Z', tags: [] },
+      'admin',
+    );
+    expect(cleared.tags).toEqual([]);
+
+    // explicit list → taken as given
+    const explicit = await service.addLog(
+      'engine',
+      { maintenance_date: '2026-07-03T00:00:00Z', tags: ['Winter'] },
+      'admin',
+    );
+    expect(explicit.tags).toEqual(['Winter']);
+  });
+
   it('replaces tags on updateLog and prunes now-orphaned tags', async () => {
     const { service } = makeService();
     service.createTask({ name: 'Engine' });

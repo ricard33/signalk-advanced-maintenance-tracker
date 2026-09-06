@@ -830,6 +830,10 @@ Log create body (mark complete):
 (single entry, per-task list, master log) includes a `tags: string[]` field.
 Master-log `search` also matches on tag name.
 
+On `POST /tasks/:slug/logs`, an **omitted** `tags` field inherits the task's
+current tags; an explicit list — `[]` included — is taken as given. The
+"Mark complete" modal pre-fills the task's tags as an editable starting point.
+
 `consume_stock` defaults to `true` when the task has linked consumables; set
 `false` to log the work without touching stowage-mgmt stock. The log entry
 is created regardless of whether stock consumption succeeds — it is never
