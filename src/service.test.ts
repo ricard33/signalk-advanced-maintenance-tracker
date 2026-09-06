@@ -24,7 +24,7 @@ function makeService(
 describe('migrations', () => {
   it('applies schema and records version', () => {
     const { db } = makeService();
-    expect(schemaVersion(db)).toBe(8);
+    expect(schemaVersion(db)).toBe(9);
     const tables = (
       db.prepare(`SELECT name FROM sqlite_master WHERE type='table'`).all() as {
         name: string;
@@ -38,6 +38,8 @@ describe('migrations', () => {
       'log_entries',
       'runtime_cache',
       'task_consumables',
+      'equipment',
+      'equipment_tags',
       'meta',
     ]) {
       expect(tables).toContain(t);
@@ -435,6 +437,169 @@ describe('log tags', () => {
 
     service.deleteTask('engine');
     expect(service.listTags()).toEqual([]);
+  });
+});
+
+describe('equipment (§5.9)', () => {
+  it('creates, reads, lists and updates equipment with its tags', () => {
+    const { service } = makeService();
+    const eq = service.createEquipment({
+      name: 'Port engine',
+      brand: 'Yanmar',
+      model: '3YM30',
+      purchase_price: 8500,
+      purchase_date: '2020-05-01',
+      tags: ['Engines', 'Port'],
+    });
+    expect(eq.slug).toBe('port-engine');
+    expect(eq.brand).toBe('Yanmar');
+    expect(eq.purchase_date).toBe('2020-05-01T00:00:00.000Z');
+    expect(eq.tags).toEqual(['Engines', 'Port']);
+
+    expect(service.getEquipment('port-engine').name).toBe('Port engine');
+    expect(service.listEquipment({}).data.map((e) => e.slug)).toEqual([
+      'port-engine',
+    ]);
+
+    const updated = service.updateEquipment('port-engine', {
+      name: 'Port engine (rebuilt)',
+      tags: ['Engines'],
+    });
+    expect(updated.name).toBe('Port engine (rebuilt)');
+    expect(updated.tags).toEqual(['Engines']);
+    // untouched fields keep their value
+    expect(updated.brand).toBe('Yanmar');
+  });
+
+  it('auto-suffixes duplicate slugs and rejects an explicit collision', () => {
+    const { service } = makeService();
+    service.createEquipment({ name: 'Winch' });
+    expect(service.createEquipment({ name: 'Winch' }).slug).toBe('winch-2');
+    service.createEquipment({ name: 'A', slug: 'shared' });
+    expect(() =>
+      service.createEquipment({ name: 'B', slug: 'shared' }),
+    ).toThrowError(expect.objectContaining({ status: 409 }));
+  });
+
+  it('validates name, price and dates', () => {
+    const { service } = makeService();
+    expect(() => service.createEquipment({})).toThrowError(
+      expect.objectContaining({ status: 400, code: 'invalid_name' }),
+    );
+    expect(() =>
+      service.createEquipment({ name: 'X', purchase_price: -1 }),
+    ).toThrowError(
+      expect.objectContaining({ status: 400, code: 'invalid_price' }),
+    );
+    expect(() =>
+      service.createEquipment({ name: 'X', warranty_until: 'not-a-date' }),
+    ).toThrowError(
+      expect.objectContaining({ status: 400, code: 'invalid_date' }),
+    );
+    expect(() => service.getEquipment('nope')).toThrowError(
+      expect.objectContaining({ status: 404 }),
+    );
+  });
+
+  it('listTags counts equipment alongside tasks and logs', async () => {
+    const { service } = makeService();
+    service.createEquipment({ name: 'Engine', tags: ['Engines'] });
+    service.createTask({ name: 'Oil', tags: ['Engines'] });
+    await service.addLog(
+      'oil',
+      { maintenance_date: '2026-07-01T00:00:00Z', tags: ['Engines'] },
+      'admin',
+    );
+    expect(service.listTags().find((t) => t.name === 'Engines')?.count).toBe(3);
+  });
+
+  it('links a task to an equipment and resolves the name/slug onto the DTO', () => {
+    const { service } = makeService();
+    const eq = service.createEquipment({ name: 'Port engine' });
+    const task = service.createTask({ name: 'Oil', equipment_id: eq.id });
+    expect(task.equipment_id).toBe(eq.id);
+    expect(task.equipment_name).toBe('Port engine');
+    expect(task.equipment_slug).toBe('port-engine');
+    expect(service.getTask('oil').equipment_slug).toBe('port-engine');
+    expect(service.listTasks({ equipment: 'port-engine' }).data).toHaveLength(
+      1,
+    );
+    expect(service.listTasks({ equipment: 'other' }).data).toHaveLength(0);
+
+    const cleared = service.updateTask('oil', { equipment_id: null });
+    expect(cleared.equipment_id).toBeNull();
+    expect(cleared.equipment_name).toBeNull();
+  });
+
+  it('rejects an unknown equipment_id on a task', () => {
+    const { service } = makeService();
+    expect(() =>
+      service.createTask({ name: 'Oil', equipment_id: 999 }),
+    ).toThrowError(expect.objectContaining({ status: 404 }));
+  });
+
+  it('a task log inherits the task equipment when omitted; explicit wins', async () => {
+    const { service } = makeService();
+    const eq = service.createEquipment({ name: 'Port engine' });
+    const other = service.createEquipment({ name: 'Winch' });
+    service.createTask({ name: 'Oil', equipment_id: eq.id });
+
+    const inherited = await service.addLog(
+      'oil',
+      { maintenance_date: '2026-07-01T00:00:00Z' },
+      'admin',
+    );
+    expect(inherited.equipment_slug).toBe('port-engine');
+
+    const explicit = await service.addLog(
+      'oil',
+      { maintenance_date: '2026-07-02T00:00:00Z', equipment_id: other.id },
+      'admin',
+    );
+    expect(explicit.equipment_slug).toBe('winch');
+
+    const unlinked = await service.addLog(
+      'oil',
+      { maintenance_date: '2026-07-03T00:00:00Z', equipment_id: null },
+      'admin',
+    );
+    expect(unlinked.equipment_id).toBeNull();
+  });
+
+  it('standalone logs take an equipment_id and updateLog can change it', () => {
+    const { service } = makeService();
+    const eq = service.createEquipment({ name: 'Liferaft' });
+    const entry = service.addStandaloneLog(
+      {
+        title: 'Serviced liferaft',
+        maintenance_date: '2026-07-01T00:00:00Z',
+        equipment_id: eq.id,
+      },
+      'admin',
+    );
+    expect(entry.equipment_slug).toBe('liferaft');
+    const off = service.updateLog(entry.id, { equipment_id: null });
+    expect(off.equipment_id).toBeNull();
+  });
+
+  it('deleting an equipment unlinks its tasks/logs and prunes orphan tags', async () => {
+    const { service } = makeService();
+    const eq = service.createEquipment({ name: 'Port engine', tags: ['Solo'] });
+    service.createTask({ name: 'Oil', equipment_id: eq.id });
+    const log = await service.addLog(
+      'oil',
+      { maintenance_date: '2026-07-01T00:00:00Z' },
+      'admin',
+    );
+
+    service.deleteEquipment('port-engine');
+
+    expect(service.getTask('oil').equipment_id).toBeNull();
+    expect(service.logs.get(log.id)?.equipment_id).toBeNull();
+    expect(service.listTags()).toEqual([]); // 'Solo' pruned
+    expect(() => service.getEquipment('port-engine')).toThrowError(
+      expect.objectContaining({ status: 404 }),
+    );
   });
 });
 

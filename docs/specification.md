@@ -140,7 +140,8 @@ signalk-maintenance-tracker/
 │   │   ├── migrations.ts
 │   │   ├── tasks.repo.ts
 │   │   ├── logs.repo.ts
-│   │   └── tags.repo.ts
+│   │   ├── tags.repo.ts
+│   │   └── equipment.repo.ts
 │   ├── domain/
 │   │   ├── status.ts         # due-date / remaining / status calculations
 │   │   └── slug.ts           # slug generation + uniqueness
@@ -227,8 +228,8 @@ Constraints/notes:
 | id     | INTEGER PK AUTOINCREMENT |                                            |
 | name   | TEXT UNIQUE NOT NULL     | case-insensitive unique (store normalized) |
 
-Tags are freeform, created on demand when assigned to a task **or a log entry**
-(§5.4a), auto-pruned when neither a task nor a log references them.
+Tags are freeform, created on demand when assigned to a task, a log entry
+(§5.4a), **or an equipment** (§5.9), auto-pruned when nothing references them.
 
 ### 5.3 `task_tags`
 
@@ -259,11 +260,17 @@ tags from the same `tags` vocabulary. Same shape as `task_tags`.
 | runtime_hours    | REAL NULL                                         | runtime at completion (if a runtime path exists) |
 | notes            | TEXT                                              | markdown                                         |
 | logged_by        | TEXT NULL                                         | SignalK user identifier (see §9)                 |
+| equipment_id     | INTEGER NULL FK → equipment(id) ON DELETE SET NULL | boat component this entry concerns (§5.9)        |
 | created_at       | TEXT NOT NULL                                     |                                                  |
 
-Indexes: `idx_log_task_date (task_id, maintenance_date DESC)`. Search uses plain
-`LIKE` (§6.3); at the expected scale (well under ~200 tasks) no full-text index is
-needed.
+Indexes: `idx_log_task_date (task_id, maintenance_date DESC)`,
+`idx_log_equipment (equipment_id)`. Search uses plain `LIKE` (§6.3); at the
+expected scale (well under ~200 tasks) no full-text index is needed.
+
+`tasks` (§5.1) carries the same nullable `equipment_id INTEGER FK → equipment(id)
+ON DELETE SET NULL` column (index `idx_tasks_equipment`) — a task or a log entry
+references **at most one** equipment, or none. Deleting an equipment SET NULLs
+the links so the maintenance history survives.
 
 ### 5.5 `runtime_cache`
 
@@ -312,9 +319,41 @@ few ways the repositories must respect:
   the multi-write log-completion path in §5.6).
 - **Pragmas:** no `db.pragma()` helper — use `db.exec('PRAGMA journal_mode = WAL')`
   etc.
-- **Foreign keys / cascade:** the `ON DELETE CASCADE` rules in §5.3/§5.4 depend on
-  FK enforcement, which `DatabaseSync` enables by default
-  (`enableForeignKeyConstraints: true`). Leave it on.
+- **Foreign keys / cascade:** the `ON DELETE CASCADE` rules in §5.3/§5.4 and the
+  `ON DELETE SET NULL` rules in §5.9 depend on FK enforcement, which
+  `DatabaseSync` enables by default (`enableForeignKeyConstraints: true`).
+  Leave it on.
+
+### 5.9 `equipment`
+
+A physical boat component (engine, hull, mast, a specific instrument, safety
+gear…) that is maintained on a schedule (recurring task) or repaired ad hoc
+(standalone log entry). Added in migration 9.
+
+| column         | type                    | notes                                   |
+| -------------- | ----------------------- | --------------------------------------- |
+| id             | INTEGER PK AUTOINCREMENT |                                        |
+| slug           | TEXT UNIQUE NOT NULL    | URL identifier; auto-generated, editable |
+| name           | TEXT NOT NULL           |                                         |
+| description    | TEXT NULL               | markdown                                |
+| brand          | TEXT NULL               |                                         |
+| model          | TEXT NULL               |                                         |
+| serial_number  | TEXT NULL               |                                         |
+| purchase_date  | TEXT NULL               | ISO date                                |
+| purchase_price | REAL NULL               | bare number, no currency handling       |
+| warranty_until | TEXT NULL               | ISO date                                |
+| created_at     | TEXT NOT NULL           |                                         |
+| updated_at     | TEXT NOT NULL           |                                         |
+
+A task (§5.1) and a log entry (§5.4) each carry a nullable `equipment_id` FK
+(`ON DELETE SET NULL`). `GET /tags` counts (§8.3) include equipment.
+
+### 5.10 `equipment_tags`
+
+Link table letting equipment carry tags from the same `tags` vocabulary. Same
+shape as `task_tags` (§5.3) / `log_tags` (§5.4a): `equipment_id` FK →
+`equipment(id)` ON DELETE CASCADE, `tag_id` FK → `tags(id)` ON DELETE CASCADE,
+`PRIMARY KEY (equipment_id, tag_id)`.
 
 ---
 
@@ -512,17 +551,20 @@ drives the attribute.
   response, so every keystroke and every chip click blanked and re-drew them —
   a flicker in the toolbar that cost more than the number was worth. `GET /tags`
   still returns a `count` per tag; the list UI simply doesn't render it.
-- All list state (search, tags, status, sort, page) is held in the URL hash query string so
-  views are shareable/bookmarkable and survive refresh (a `useListParams` helper
-  over the hash router).
+- All list state (search, tags, equipment, status, sort, page) is held in the
+  URL hash query string so views are shareable/bookmarkable and survive refresh
+  (a `useListParams` helper over the hash router).
+- An **equipment** column (link) sits between name and tags; an
+  **equipment filter** row of single-select chips (`EQUIPMENT:`, same pattern as
+  the tag chips, omitted when no equipment exists) sits above the tag row.
 - Live-updating via the data layer's polling (default 5 s, configurable — §7.6).
 
 **Task Detail (`/tasks/:slug`)**
 
-- Shows name, rendered markdown description, tags, both intervals, current
-  elapsed/remaining runtime and time (with CSS progress bars from
-  `runtime_fraction` / `time_fraction`), next due date(s), and current status
-  badge.
+- Shows name, rendered markdown description, tags, the linked equipment (a link
+  to its detail page), both intervals, current elapsed/remaining runtime and
+  time (with CSS progress bars from `runtime_fraction` / `time_fraction`), next
+  due date(s), and current status badge.
 - A "Mark complete" button opening the Complete modal.
 - A per-task log table (date, tags, runtime, logged_by) with edit/delete
   actions on each entry.
@@ -530,10 +572,28 @@ drives the attribute.
 **Master Log (`/log`)**
 
 - One row per log entry across all tasks: task name (link), maintenance date,
-  tags (chips), runtime hours, notes (truncated, expandable), logged_by. The
-  per-task log table (§7.4 Task Detail) uses the same columns minus the task.
+  equipment (link), tags (chips), runtime hours, notes (truncated, expandable),
+  logged_by. The per-task log table (§7.4 Task Detail) uses the same columns
+  minus the task and equipment.
 - Sortable + searchable + paginated (server-side, same pattern as task list).
-  Search also matches on tag name (§8.2).
+  Search also matches on tag name and equipment name (§8.2). The export gains an
+  Equipment column.
+
+**Equipment List (`/equipment`)**
+
+- Hand-rolled `<Table/>`: name (link), tags (chips), brand, model, linked-task
+  count, linked-log count, and — logged in — edit/delete icons.
+- Toolbar: freeform search box; "New Equipment" button (logged in). A
+  single-select tag filter row (omitted when no tags exist). Server-side
+  search/sort/paging, URL-hash list state, 5 s polling.
+
+**Equipment Detail (`/equipment/:slug`)**
+
+- Shows name + tags, a details card (description markdown, brand, model, serial
+  number, purchase date/price, warranty), a table of the tasks linked to this
+  equipment, and a table of the log entries linked to it.
+- Logged in: Edit / Delete buttons. Deleting warns how many tasks / log entries
+  will be unlinked (their history is kept — §5.9).
 
 ### 7.5 Modals
 
@@ -544,8 +604,10 @@ Escape-to-close, focus trap, `role="dialog"`) — no modal library.
   preview derived from name but editable; on edit, an editable field that warns
   the change breaks existing deep links, §6.4); markdown description (textarea
   with a preview toggle), tags (creatable
-  multi-select fed by `GET /tags`), a "Recurring task" toggle (v1.5) gating the
-  schedule fields, due date, runtime interval (hours), time interval
+  multi-select fed by `GET /tags`), an **equipment** native `<select>` (`— None —`
+  plus one option per equipment; picking one merges the equipment's tags into
+  the Tags field, editable before save), a "Recurring task" toggle (v1.5) gating
+  the schedule fields, due date, runtime interval (hours), time interval
   (number + unit select), runtime path (a tree / autocomplete picker built
   client-side from SignalK's `/signalk/v1/api/vessels/self` snapshot — fetched
   once and cached, §8.4 — the user selects a path string; free-text entry is also
@@ -555,12 +617,17 @@ Escape-to-close, focus trap, `role="dialog"`) — no modal library.
   window (which drives the due date's "due soon" state) remain. "New Task"
   opens the form with the toggle on, "New Todo" with it off; a recurring task
   won't save without at least one interval.
-- **Complete** — maintenance datetime (default now), runtime hours (prefilled from
-  the task's `current_runtime` from the `/tasks` API when a runtime path is set,
-  §8.1/§8.4), notes (markdown). Submits a new log entry (§8,
-  `POST /tasks/:slug/logs`).
+- **Complete / Log entry** — maintenance datetime (default now), runtime hours
+  (prefilled from the task's `current_runtime` from the `/tasks` API when a
+  runtime path is set, §8.1/§8.4), an equipment `<select>` (inherits the task's
+  on "Mark complete", editable), tags, notes (markdown). Submits a log entry
+  (§8, `POST /tasks/:slug/logs` or `POST /logs` for a standalone entry).
+- **Equipment form (create/edit)** — name; slug (live preview / editable, same
+  deep-link warning as the task form); markdown description (preview toggle);
+  brand, model, serial number; purchase date, purchase price, warranty-until;
+  tags. Calls `POST` / `PUT /equipment`.
 - **Delete confirm** — simple confirmation; on confirm calls `DELETE
-/tasks/:slug`.
+/tasks/:slug` or `DELETE /equipment/:slug`.
 
 ### 7.6 Data layer
 
@@ -726,10 +793,10 @@ assume authorization has already passed and never re-check it (§9).
 
 | Method | Path           | Description                                                                                                                                                                                                                                                                                     |
 | ------ | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/tasks`       | List tasks (paginated). Query: `search`, `tags` (csv), `status` (csv of overdue/due_soon/todo/ok/pending/archived), `sort` (name\|remaining_runtime\|remaining_time\|status), `order` (asc\|desc), `page`, `pageSize`. Each item includes stored + computed fields (§6.2/6.3). Default sort = status urgency. |
-| POST   | `/tasks`       | Create. Body below. Server generates slug.                                                                                                                                                                                                                                                      |
-| GET    | `/tasks/:slug` | Task detail incl. computed fields, tags, and recent log entries (or a link + `GET /tasks/:slug/logs`).                                                                                                                                                                                          |
-| PUT    | `/tasks/:slug` | Update editable fields (name, description, intervals, runtime_path, tags, consumables, seed last_* on tasks with no logs). May also change `slug` (normalized + uniqueness-checked; triggers notification-path migration, §6.4).                                                                |
+| GET    | `/tasks`       | List tasks (paginated). Query: `search`, `tags` (csv), `equipment` (slug), `status` (csv of overdue/due_soon/todo/ok/pending/archived), `sort` (name\|remaining_runtime\|remaining_time\|status), `order` (asc\|desc), `page`, `pageSize`. Each item includes stored + computed fields (§6.2/6.3) plus `equipment_id`/`equipment_name`/`equipment_slug`. Default sort = status urgency. |
+| POST   | `/tasks`       | Create. Body below (accepts `equipment_id`). Server generates slug.                                                                                                                                                                                                                              |
+| GET    | `/tasks/:slug` | Task detail incl. computed fields, tags, equipment, and recent log entries (or a link + `GET /tasks/:slug/logs`).                                                                                                                                                                               |
+| PUT    | `/tasks/:slug` | Update editable fields (name, description, intervals, runtime_path, tags, `equipment_id`, consumables, seed last_* on tasks with no logs). May also change `slug` (normalized + uniqueness-checked; triggers notification-path migration, §6.4).                                                  |
 | DELETE | `/tasks/:slug` | Delete task + its log entries (cascade). Clears its notification.                                                                                                                                                                                                                               |
 
 Task request body (create/update). `slug` is optional: omit it on create to
@@ -770,6 +837,9 @@ Task response object (list item / detail):
   "name": "Engine oil change",
   "description": "…",
   "tags": ["Engines", "Port Engine"],
+  "equipment_id": 3,
+  "equipment_name": "Port engine",
+  "equipment_slug": "port-engine",
   "consumables": [
     { "item_id": "abc123", "item_name": "Oil filter", "qty_per_service": 1 }
   ],
@@ -809,7 +879,7 @@ Task response object (list item / detail):
 
 | Method | Path                | Description                                                                                                                                                                                                                                                                                                                                                                                |
 | ------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| GET    | `/logs`             | Master log, paginated. Query: `search`, `sort` (maintenance_date\|task\|runtime_hours), `order`, `page`, `pageSize`. Each item includes `task_slug` + `task_name`.                                                                                                                                                                                                                         |
+| GET    | `/logs`             | Master log, paginated. Query: `search`, `equipment` (slug), `sort` (maintenance_date\|task\|runtime_hours), `order`, `page`, `pageSize`. Each item includes `task_slug`/`task_name` and `equipment_id`/`equipment_slug`/`equipment_name`.                                                                                                                                                    |
 | GET    | `/tasks/:slug/logs` | Log entries for one task.                                                                                                                                                                                                                                                                                                                                                                  |
 | POST   | `/tasks/:slug/logs` | **Mark complete** — create a log entry. Recomputes task denormalized fields (§5.6), clears any one-time `due_date` (the deadline was for this completion), archives the task if it is a non-recurring todo (§6.3), and refreshes the task's notification. `logged_by` is filled server-side from the request principal (§9), not the body. If the task has linked consumables (§8.1) and stowage-mgmt integration is configured, also decrements their stock — best-effort; see below and `docs/inventory-interaction.md`. |
 | PUT    | `/logs/:id`         | Edit a log entry. Recomputes task fields if it was/becomes the latest.                                                                                                                                                                                                                                                                                                                     |
@@ -823,6 +893,7 @@ Log create body (mark complete):
   "runtime_hours": 1360.0,
   "notes": "Replaced filter, topped up coolant.",
   "tags": ["Engines", "Winter"],
+  "equipment_id": 3,
   "consume_stock": true
 }
 ```
@@ -831,11 +902,13 @@ Log create body (mark complete):
 (§5.4a, same semantics as a task's `tags`). It is accepted on
 `POST /tasks/:slug/logs`, `POST /logs` and `PUT /logs/:id`; every log response
 (single entry, per-task list, master log) includes a `tags: string[]` field.
-Master-log `search` also matches on tag name.
+Master-log `search` also matches on tag name and equipment name.
 
-On `POST /tasks/:slug/logs`, an **omitted** `tags` field inherits the task's
-current tags; an explicit list — `[]` included — is taken as given. The
-"Mark complete" modal pre-fills the task's tags as an editable starting point.
+On `POST /tasks/:slug/logs`, an **omitted** `tags` and an **omitted**
+`equipment_id` both inherit the task's current values; an explicit value —
+`[]` / `null` included — is taken as given. The "Mark complete" modal pre-fills
+both as an editable starting point. `equipment_id` links the entry to a boat
+component (§5.9); an unknown id is rejected.
 
 `consume_stock` defaults to `true` when the task has linked consumables; set
 `false` to log the work without touching stowage-mgmt stock. The log entry
@@ -852,9 +925,23 @@ fields.
 | ------ | ------- | ------------------------------------------------------------ |
 | GET    | `/tags` | All tags with usage counts, for filter chips + autocomplete. |
 
-Tags are created/removed implicitly through task **and log entry** create/update.
-`count` is the number of tasks plus log entries referencing the tag. (A `DELETE
-/tags/:id` may be added later for manual cleanup; v1 auto-prunes orphans.)
+Tags are created/removed implicitly through task, log entry **and equipment**
+create/update. `count` is the number of tasks plus log entries plus equipment
+referencing the tag. (A `DELETE /tags/:id` may be added later for manual
+cleanup; v1 auto-prunes orphans.)
+
+### 8.7 Equipment
+
+| Method | Path               | Description                                                                                                            |
+| ------ | ------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/equipment`       | List (paginated). Query: `search`, `tags` (csv), `sort` (name\|created_at), `order`, `page`, `pageSize`. Each item includes `tags`, `task_count`, `log_count`. |
+| POST   | `/equipment`       | Create. Body: `name` (required), `slug?`, `description?`, `brand?`, `model?`, `serial_number?`, `purchase_date?`, `purchase_price?` (≥ 0), `warranty_until?`, `tags?`. |
+| GET    | `/equipment/:slug` | Detail.                                                                                                               |
+| PUT    | `/equipment/:slug` | Update the same fields; may change `slug`.                                                                            |
+| DELETE | `/equipment/:slug` | Delete. Linked tasks / log entries are unlinked (`equipment_id` → NULL, §5.9), not deleted.                           |
+
+Error codes: `invalid_name`, `invalid_price`, `invalid_date` (400),
+`slug_conflict` (409), `not_found` (404).
 
 ### 8.4 SignalK path discovery (no plugin endpoint)
 
@@ -1037,6 +1124,13 @@ subscription set is derived from the DB.)
 
 These were open during drafting and are now settled:
 
+- **Equipment (v1.6):** a first-class entity (§5.9). A task or a log entry links
+  to **at most one** equipment (or none). `ON DELETE SET NULL` — deleting an
+  equipment keeps the maintenance history, just unlinked. The task-form /
+  log-entry equipment picker is a **native `<select>`** (modest cardinality);
+  choosing one **pre-fills** the Tags field with the equipment's tags (editable,
+  frontend-only — no backend tag inheritance). No back-fill of the existing
+  Ready4Sea "equipment tags" into real equipment records (separate exercise).
 - **Tasks with neither interval:** originally allowed as "informational-only"
   tasks; superseded in v1.5. A task without an interval is now a one-off
   **todo** (`is_recurring = 0`) that archives itself when completed, and a

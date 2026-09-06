@@ -9,10 +9,13 @@ export interface NewLog {
   runtime_hours: number | null;
   notes: string | null;
   logged_by: string | null;
+  equipment_id: number | null;
 }
 
 export interface MasterLogQuery {
   search?: string;
+  /** Filter to entries linked to this equipment (by slug). */
+  equipment?: string;
   sort?: 'maintenance_date' | 'task' | 'runtime_hours';
   order?: 'asc' | 'desc';
   page: number;
@@ -20,7 +23,7 @@ export interface MasterLogQuery {
 }
 
 const LOG_COLUMNS = `l.id, l.task_id, l.title, l.maintenance_date, l.runtime_hours, l.notes,
-  l.logged_by, l.created_at`;
+  l.logged_by, l.equipment_id, l.created_at`;
 
 export class LogsRepo {
   constructor(private db: DatabaseSync) {}
@@ -28,8 +31,8 @@ export class LogsRepo {
   insert(entry: NewLog, nowIso: string): LogRow {
     const result = this.db
       .prepare(
-        `INSERT INTO log_entries (task_id, title, maintenance_date, runtime_hours, notes, logged_by, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO log_entries (task_id, title, maintenance_date, runtime_hours, notes, logged_by, equipment_id, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         entry.task_id,
@@ -38,6 +41,7 @@ export class LogsRepo {
         entry.runtime_hours,
         entry.notes,
         entry.logged_by,
+        entry.equipment_id,
         nowIso,
       );
     return this.get(Number(result.lastInsertRowid))!;
@@ -56,17 +60,20 @@ export class LogsRepo {
       maintenance_date: string;
       runtime_hours: number | null;
       notes: string | null;
+      equipment_id: number | null;
     },
   ): void {
     this.db
       .prepare(
-        `UPDATE log_entries SET title = ?, maintenance_date = ?, runtime_hours = ?, notes = ? WHERE id = ?`,
+        `UPDATE log_entries SET title = ?, maintenance_date = ?, runtime_hours = ?,
+           notes = ?, equipment_id = ? WHERE id = ?`,
       )
       .run(
         fields.title,
         fields.maintenance_date,
         fields.runtime_hours,
         fields.notes,
+        fields.equipment_id,
         id,
       );
   }
@@ -119,18 +126,25 @@ export class LogsRepo {
   }
 
   listMaster(q: MasterLogQuery): { data: LogDTO[]; total: number } {
-    // LEFT JOIN: standalone entries have no task row — they list under their
-    // own title, which stands in for the task name in search and sort too.
+    // LEFT JOINs: standalone entries have no task row — they list under their
+    // own title; the equipment join drives the equipment filter + name search.
+    const joins = `LEFT JOIN tasks t ON t.id = l.task_id
+       LEFT JOIN equipment e ON e.id = l.equipment_id`;
     const where: string[] = [];
     const params: (string | number)[] = [];
     if (q.search) {
       const like = `%${q.search}%`;
       where.push(
         `(l.notes LIKE ? OR t.name LIKE ? OR l.title LIKE ? OR l.logged_by LIKE ?
+          OR e.name LIKE ?
           OR l.id IN (SELECT lt.log_id FROM log_tags lt
                       JOIN tags tg ON tg.id = lt.tag_id WHERE tg.name LIKE ?))`,
       );
-      params.push(like, like, like, like, like);
+      params.push(like, like, like, like, like, like);
+    }
+    if (q.equipment) {
+      where.push(`e.slug = ?`);
+      params.push(q.equipment);
     }
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
@@ -143,15 +157,13 @@ export class LogsRepo {
     const orderSql = q.order === 'asc' ? 'ASC' : 'DESC';
 
     const totalRow = this.db
-      .prepare(
-        `SELECT COUNT(*) AS n FROM log_entries l LEFT JOIN tasks t ON t.id = l.task_id ${whereSql}`,
-      )
+      .prepare(`SELECT COUNT(*) AS n FROM log_entries l ${joins} ${whereSql}`)
       .get(...params) as { n: number };
 
     const data = this.db
       .prepare(
         `SELECT ${LOG_COLUMNS}, t.slug AS task_slug, t.name AS task_name
-         FROM log_entries l LEFT JOIN tasks t ON t.id = l.task_id
+         FROM log_entries l ${joins}
          ${whereSql}
          ORDER BY ${sortCol} ${orderSql}, l.id DESC
          LIMIT ? OFFSET ?`,

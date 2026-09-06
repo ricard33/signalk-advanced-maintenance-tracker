@@ -37,7 +37,7 @@ describe('migration 7 — is_recurring backfill (v1.5)', () => {
     insert.run('paperwork', 'Paperwork', null, null, null, null, null);
 
     migrate(db); // applies migrations 7+
-    expect(schemaVersion(db)).toBe(8);
+    expect(schemaVersion(db)).toBe(9);
 
     const rows = db
       .prepare(
@@ -110,5 +110,42 @@ describe('migration 8 — log_tags link table', () => {
     expect(count()).toBe(1);
     db.prepare(`DELETE FROM log_entries WHERE id = 1`).run();
     expect(count()).toBe(0);
+  });
+});
+
+describe('migration 9 — equipment', () => {
+  it('adds equipment + equipment_tags, and SET NULLs the task/log links on delete', () => {
+    const db = openAt(9);
+    db.prepare(
+      `INSERT INTO equipment (slug, name, created_at, updated_at)
+       VALUES ('port-engine', 'Port engine', '2026-01-01', '2026-01-01')`,
+    ).run();
+    db.prepare(
+      `INSERT INTO tasks (slug, name, equipment_id, created_at, updated_at)
+       VALUES ('oil', 'Oil', 1, '2026-01-01', '2026-01-01')`,
+    ).run();
+    db.prepare(
+      `INSERT INTO log_entries (task_id, maintenance_date, equipment_id, created_at)
+       VALUES (1, '2026-01-01', 1, '2026-01-01')`,
+    ).run();
+    db.prepare(`INSERT INTO tags (name) VALUES ('Engines')`).run();
+    db.prepare(
+      `INSERT INTO equipment_tags (equipment_id, tag_id) VALUES (1, 1)`,
+    ).run();
+
+    const one = (sql: string) =>
+      (db.prepare(sql).get() as { n: number | null }).n;
+    expect(one(`SELECT COUNT(*) AS n FROM equipment_tags`)).toBe(1);
+
+    db.prepare(`DELETE FROM equipment WHERE id = 1`).run();
+
+    // equipment_tags cascades away, but the task and log survive, unlinked
+    expect(one(`SELECT COUNT(*) AS n FROM equipment_tags`)).toBe(0);
+    expect(one(`SELECT equipment_id AS n FROM tasks WHERE id = 1`)).toBe(null);
+    expect(one(`SELECT equipment_id AS n FROM log_entries WHERE id = 1`)).toBe(
+      null,
+    );
+    expect(one(`SELECT COUNT(*) AS n FROM tasks`)).toBe(1);
+    expect(one(`SELECT COUNT(*) AS n FROM log_entries`)).toBe(1);
   });
 });

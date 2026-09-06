@@ -43,13 +43,14 @@ describe('TaskListPage (§7.4)', () => {
     expect(screen.getByText('Engine oil change').getAttribute('href')).toBe(
       '#/tasks/engine-oil-change',
     );
-    // tags column: the tag renders as a chip in the row, before "Runtime Left"
+    // equipment + tags columns render before "Runtime Left"
     const headers = Array.from(document.querySelectorAll('.table th')).map(
       (h) => h.textContent.trim(),
     );
     expect(headers).toEqual([
       'Status',
       'Name',
+      'Equipment',
       'Tags',
       'Runtime Left',
       'Time left',

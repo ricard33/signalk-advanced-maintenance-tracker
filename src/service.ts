@@ -1,6 +1,7 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { publicUser } from './auth';
 import { ConsumableRow, ConsumablesRepo } from './db/consumables.repo';
+import { EquipmentRepo, NewEquipment } from './db/equipment.repo';
 import { LogsRepo, MasterLogQuery } from './db/logs.repo';
 import { TagsRepo, TagCount } from './db/tags.repo';
 import { TasksRepo, NewTask } from './db/tasks.repo';
@@ -8,6 +9,9 @@ import { slugify, uniqueSlug } from './domain/slug';
 import { computeTask, StatusConfig } from './domain/status';
 import { StowageClient, StowageUnavailableError } from './stowage/client';
 import {
+  EquipmentDTO,
+  EquipmentInput,
+  EquipmentRow,
   LogDTO,
   LogInput,
   LogRow,
@@ -18,6 +22,9 @@ import {
   TaskRow,
   TIME_UNITS,
 } from './types';
+
+/** The linked-equipment fields the service resolves onto task/log DTOs. */
+type EquipmentRef = Pick<EquipmentRow, 'id' | 'slug' | 'name'> | null;
 
 export class ApiError extends Error {
   constructor(
@@ -32,8 +39,19 @@ export class ApiError extends Error {
 export interface TaskListQuery {
   search?: string;
   tags?: string[];
+  /** Filter to tasks linked to this equipment (by slug). */
+  equipment?: string;
   status?: Status[];
   sort?: 'name' | 'remaining_runtime' | 'remaining_time' | 'status';
+  order?: 'asc' | 'desc';
+  page?: number;
+  pageSize?: number;
+}
+
+export interface EquipmentListQuery {
+  search?: string;
+  tags?: string[];
+  sort?: 'name' | 'created_at';
   order?: 'asc' | 'desc';
   page?: number;
   pageSize?: number;
@@ -73,6 +91,7 @@ export class MaintenanceService {
   readonly logs: LogsRepo;
   readonly tags: TagsRepo;
   readonly consumables: ConsumablesRepo;
+  readonly equipment: EquipmentRepo;
 
   constructor(
     private db: DatabaseSync,
@@ -82,6 +101,7 @@ export class MaintenanceService {
     this.logs = new LogsRepo(db);
     this.tags = new TagsRepo(db);
     this.consumables = new ConsumablesRepo(db);
+    this.equipment = new EquipmentRepo(db);
   }
 
   private now(): Date {
@@ -98,6 +118,7 @@ export class MaintenanceService {
     row: TaskRow,
     tags: string[],
     consumables: ConsumableRow[],
+    equipment: EquipmentRef,
   ): TaskDTO {
     const current = row.runtime_path
       ? this.deps.getRuntime(row.runtime_path)
@@ -120,6 +141,9 @@ export class MaintenanceService {
       last_runtime: row.last_runtime,
       is_archived: row.is_archived !== 0,
       is_recurring: row.is_recurring !== 0,
+      equipment_id: row.equipment_id,
+      equipment_name: equipment ? equipment.name : null,
+      equipment_slug: equipment ? equipment.slug : null,
       created_at: row.created_at,
       updated_at: row.updated_at,
       consumables: consumables.map((c) => ({
@@ -129,6 +153,16 @@ export class MaintenanceService {
       })),
       ...computed,
     };
+  }
+
+  /** Resolve a task/log's equipment_id to the ref fields carried on its DTO. */
+  private equipmentRef(
+    id: number | null,
+    byId?: Map<number, EquipmentRow>,
+  ): EquipmentRef {
+    if (id == null) return null;
+    const row = byId ? byId.get(id) : this.equipment.getById(id);
+    return row ? { id: row.id, slug: row.slug, name: row.name } : null;
   }
 
   // ---- tasks ----
@@ -142,6 +176,7 @@ export class MaintenanceService {
 
     const tagsByTask = this.tags.tagsByTask();
     const consumablesByTask = this.consumables.byTask();
+    const equipmentById = this.equipment.byId();
     let items = this.tasks
       .listAll()
       .map((row) =>
@@ -149,6 +184,7 @@ export class MaintenanceService {
           row,
           tagsByTask.get(row.id) ?? [],
           consumablesByTask.get(row.id) ?? [],
+          this.equipmentRef(row.equipment_id, equipmentById),
         ),
       );
 
@@ -166,6 +202,7 @@ export class MaintenanceService {
           t.name.toLowerCase().includes(needle) ||
           (t.description ?? '').toLowerCase().includes(needle) ||
           t.tags.some((tag) => tag.toLowerCase().includes(needle)) ||
+          (t.equipment_name ?? '').toLowerCase().includes(needle) ||
           (statusNeedle !== '' && t.status.includes(statusNeedle)) ||
           noteMatches.has(t.id),
       );
@@ -177,6 +214,10 @@ export class MaintenanceService {
         const have = t.tags.map((x) => x.toLowerCase());
         return wanted.every((w) => have.includes(w));
       });
+    }
+
+    if (q.equipment) {
+      items = items.filter((t) => t.equipment_slug === q.equipment);
     }
 
     if (q.status && q.status.length) {
@@ -240,6 +281,7 @@ export class MaintenanceService {
   listAllComputed(): TaskDTO[] {
     const tagsByTask = this.tags.tagsByTask();
     const consumablesByTask = this.consumables.byTask();
+    const equipmentById = this.equipment.byId();
     return this.tasks
       .listAll()
       .map((row) =>
@@ -247,6 +289,7 @@ export class MaintenanceService {
           row,
           tagsByTask.get(row.id) ?? [],
           consumablesByTask.get(row.id) ?? [],
+          this.equipmentRef(row.equipment_id, equipmentById),
         ),
       );
   }
@@ -257,6 +300,7 @@ export class MaintenanceService {
       row,
       this.tags.tagsForTask(row.id),
       this.consumables.forTask(row.id),
+      this.equipmentRef(row.equipment_id),
     );
   }
 
@@ -315,6 +359,7 @@ export class MaintenanceService {
       seed_last_runtime: body.last_runtime ?? null,
       is_archived: this.validateArchived(body.is_archived) ? 1 : 0,
       is_recurring: isRecurring ? 1 : 0,
+      equipment_id: this.resolveEquipmentId(body.equipment_id),
     };
     const row = this.tasks.create(seed, nowIso);
     if (body.tags) this.tags.setTaskTags(row.id, body.tags);
@@ -325,10 +370,12 @@ export class MaintenanceService {
         nowIso,
       );
     this.emit();
+    const created = this.tasks.getById(row.id)!;
     return this.toDTO(
-      this.tasks.getById(row.id)!,
+      created,
       this.tags.tagsForTask(row.id),
       this.consumables.forTask(row.id),
+      this.equipmentRef(created.equipment_id),
     );
   }
 
@@ -382,6 +429,10 @@ export class MaintenanceService {
             : 0
           : row.is_archived,
       is_recurring: isRecurring ? 1 : 0,
+      equipment_id:
+        body.equipment_id !== undefined
+          ? this.resolveEquipmentId(body.equipment_id)
+          : row.equipment_id,
     };
 
     if (!merged.name)
@@ -458,10 +509,12 @@ export class MaintenanceService {
         this.now().toISOString(),
       );
     this.emit({ clearedSlug });
+    const updated = this.tasks.getById(row.id)!;
     return this.toDTO(
-      this.tasks.getById(row.id)!,
+      updated,
       this.tags.tagsForTask(row.id),
       this.consumables.forTask(row.id),
+      this.equipmentRef(updated.equipment_id),
     );
   }
 
@@ -477,9 +530,17 @@ export class MaintenanceService {
   listTaskLogs(slug: string): LogDTO[] {
     const row = this.requireTask(slug);
     const tagsByLog = this.tags.tagsByLog();
+    const equipmentById = this.equipment.byId();
     return this.logs
       .listForTask(row.id)
-      .map((r) => this.toLogDTO(r, row, tagsByLog.get(r.id) ?? []));
+      .map((r) =>
+        this.toLogDTO(
+          r,
+          row,
+          tagsByLog.get(r.id) ?? [],
+          this.equipmentRef(r.equipment_id, equipmentById),
+        ),
+      );
   }
 
   listMasterLog(
@@ -495,6 +556,7 @@ export class MaintenanceService {
     );
     const { data, total } = this.logs.listMaster({ ...q, page, pageSize });
     const tagsByLog = this.tags.tagsByLog();
+    const equipmentById = this.equipment.byId();
     return {
       data: data.map((r) =>
         this.toLogDTO(
@@ -503,6 +565,7 @@ export class MaintenanceService {
             ? { slug: r.task_slug, name: r.task_name ?? '' }
             : null,
           tagsByLog.get(r.id) ?? [],
+          this.equipmentRef(r.equipment_id, equipmentById),
         ),
       ),
       total,
@@ -533,6 +596,11 @@ export class MaintenanceService {
           runtime_hours: body.runtime_hours ?? null,
           notes: body.notes ?? null,
           logged_by: loggedBy,
+          // An omitted equipment inherits the task's; explicit (incl. null) wins.
+          equipment_id:
+            body.equipment_id !== undefined
+              ? this.resolveEquipmentId(body.equipment_id)
+              : task.equipment_id,
         },
         nowIso,
       );
@@ -572,7 +640,12 @@ export class MaintenanceService {
     );
 
     return {
-      ...this.toLogDTO(entry, task, this.tags.tagsForLog(entry.id)),
+      ...this.toLogDTO(
+        entry,
+        task,
+        this.tags.tagsForLog(entry.id),
+        this.equipmentRef(entry.equipment_id),
+      ),
       ...(warnings.length ? { consumable_warnings: warnings } : {}),
     };
   }
@@ -655,6 +728,7 @@ export class MaintenanceService {
           runtime_hours: body.runtime_hours ?? null,
           notes: body.notes ?? null,
           logged_by: loggedBy,
+          equipment_id: this.resolveEquipmentId(body.equipment_id),
         },
         this.now().toISOString(),
       );
@@ -665,7 +739,12 @@ export class MaintenanceService {
       throw err;
     }
     this.emit();
-    return this.toLogDTO(entry, null, this.tags.tagsForLog(entry.id));
+    return this.toLogDTO(
+      entry,
+      null,
+      this.tags.tagsForLog(entry.id),
+      this.equipmentRef(entry.equipment_id),
+    );
   }
 
   updateLog(id: number, body: LogInput): LogDTO {
@@ -693,6 +772,10 @@ export class MaintenanceService {
             ? body.runtime_hours
             : existing.runtime_hours,
         notes: body.notes !== undefined ? body.notes : existing.notes,
+        equipment_id:
+          body.equipment_id !== undefined
+            ? this.resolveEquipmentId(body.equipment_id)
+            : existing.equipment_id,
       });
       if (body.tags !== undefined) this.tags.setLogTags(id, body.tags ?? []);
       if (existing.task_id !== null) this.recomputeDenorm(existing.task_id);
@@ -706,7 +789,13 @@ export class MaintenanceService {
       existing.task_id !== null
         ? (this.tasks.getById(existing.task_id) ?? null)
         : null;
-    return this.toLogDTO(this.logs.get(id)!, task, this.tags.tagsForLog(id));
+    const updated = this.logs.get(id)!;
+    return this.toLogDTO(
+      updated,
+      task,
+      this.tags.tagsForLog(id),
+      this.equipmentRef(updated.equipment_id),
+    );
   }
 
   deleteLog(id: number): void {
@@ -730,6 +819,191 @@ export class MaintenanceService {
 
   listTags(): TagCount[] {
     return this.tags.listWithCounts();
+  }
+
+  // ---- equipment ----
+
+  private toEquipmentDTO(
+    row: EquipmentRow,
+    tags: string[],
+    counts: { tasks: number; logs: number } | undefined,
+  ): EquipmentDTO {
+    return {
+      ...row,
+      tags,
+      task_count: counts ? counts.tasks : 0,
+      log_count: counts ? counts.logs : 0,
+    };
+  }
+
+  listEquipment(q: EquipmentListQuery): Page<EquipmentDTO> {
+    const page = Math.max(1, q.page ?? 1);
+    const pageSize = Math.min(
+      MAX_PAGE_SIZE,
+      Math.max(1, q.pageSize ?? DEFAULT_PAGE_SIZE),
+    );
+
+    const tagsByEquipment = this.tags.tagsByEquipment();
+    const linkCounts = this.equipment.linkCounts();
+    let items = this.equipment
+      .list()
+      .map((row) =>
+        this.toEquipmentDTO(
+          row,
+          tagsByEquipment.get(row.id) ?? [],
+          linkCounts.get(row.id),
+        ),
+      );
+
+    if (q.search) {
+      const needle = q.search.toLowerCase();
+      const has = (v: string | null) =>
+        (v ?? '').toLowerCase().includes(needle);
+      items = items.filter(
+        (e) =>
+          has(e.name) ||
+          has(e.brand) ||
+          has(e.model) ||
+          has(e.serial_number) ||
+          has(e.description) ||
+          e.tags.some((t) => t.toLowerCase().includes(needle)),
+      );
+    }
+
+    if (q.tags && q.tags.length) {
+      const wanted = q.tags.map((t) => t.toLowerCase());
+      items = items.filter((e) => {
+        const have = e.tags.map((x) => x.toLowerCase());
+        return wanted.every((w) => have.includes(w));
+      });
+    }
+
+    const dir = q.order === 'desc' ? -1 : 1;
+    const byName = (a: EquipmentDTO, b: EquipmentDTO) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+    const byId = (a: EquipmentDTO, b: EquipmentDTO) => a.id - b.id;
+    if (q.sort === 'created_at') {
+      items.sort(
+        (a, b) =>
+          dir * a.created_at.localeCompare(b.created_at) ||
+          byName(a, b) ||
+          byId(a, b),
+      );
+    } else {
+      items.sort((a, b) => dir * byName(a, b) || byId(a, b));
+    }
+
+    const total = items.length;
+    const data = items.slice((page - 1) * pageSize, page * pageSize);
+    return { data, total, page, pageSize };
+  }
+
+  getEquipment(slug: string): EquipmentDTO {
+    const row = this.requireEquipment(slug);
+    return this.toEquipmentDTO(
+      row,
+      this.tags.tagsForEquipment(row.id),
+      this.equipment.linkCounts().get(row.id),
+    );
+  }
+
+  createEquipment(body: EquipmentInput): EquipmentDTO {
+    const seed = this.validateEquipmentInput(body);
+    let slug: string;
+    if (body.slug != null && body.slug.trim() !== '') {
+      slug = slugify(body.slug);
+      if (this.equipment.slugExists(slug))
+        throw new ApiError(
+          409,
+          'slug_conflict',
+          `Slug "${slug}" is already in use`,
+        );
+    } else {
+      slug = uniqueSlug(slugify(seed.name), (s) =>
+        this.equipment.slugExists(s),
+      );
+    }
+
+    const nowIso = this.now().toISOString();
+    const row = this.equipment.create({ ...seed, slug }, nowIso);
+    if (body.tags) this.tags.setEquipmentTags(row.id, body.tags);
+    this.emit();
+    return this.toEquipmentDTO(
+      this.equipment.getById(row.id)!,
+      this.tags.tagsForEquipment(row.id),
+      undefined,
+    );
+  }
+
+  updateEquipment(slug: string, body: EquipmentInput): EquipmentDTO {
+    const row = this.requireEquipment(slug);
+    const validated = this.validateEquipmentInput({
+      ...body,
+      // name is required on create; on update keep the row's when omitted
+      name: body.name !== undefined ? body.name : row.name,
+    });
+
+    const merged: NewEquipment = {
+      slug: row.slug,
+      name: validated.name,
+      description:
+        body.description !== undefined
+          ? validated.description
+          : row.description,
+      brand: body.brand !== undefined ? validated.brand : row.brand,
+      model: body.model !== undefined ? validated.model : row.model,
+      serial_number:
+        body.serial_number !== undefined
+          ? validated.serial_number
+          : row.serial_number,
+      purchase_date:
+        body.purchase_date !== undefined
+          ? validated.purchase_date
+          : row.purchase_date,
+      purchase_price:
+        body.purchase_price !== undefined
+          ? validated.purchase_price
+          : row.purchase_price,
+      warranty_until:
+        body.warranty_until !== undefined
+          ? validated.warranty_until
+          : row.warranty_until,
+    };
+
+    if (
+      body.slug !== undefined &&
+      body.slug != null &&
+      body.slug.trim() !== ''
+    ) {
+      const newSlug = slugify(body.slug);
+      if (newSlug !== row.slug) {
+        if (this.equipment.slugExists(newSlug, row.id))
+          throw new ApiError(
+            409,
+            'slug_conflict',
+            `Slug "${newSlug}" is already in use`,
+          );
+        merged.slug = newSlug;
+      }
+    }
+
+    this.equipment.update(row.id, merged, this.now().toISOString());
+    if (body.tags !== undefined)
+      this.tags.setEquipmentTags(row.id, body.tags ?? []);
+    this.emit();
+    return this.toEquipmentDTO(
+      this.equipment.getById(row.id)!,
+      this.tags.tagsForEquipment(row.id),
+      this.equipment.linkCounts().get(row.id),
+    );
+  }
+
+  deleteEquipment(slug: string): void {
+    const row = this.requireEquipment(slug);
+    // FK ON DELETE SET NULL unlinks any tasks / log entries; their history stays.
+    this.equipment.delete(row.id);
+    this.tags.pruneOrphans();
+    this.emit();
   }
 
   // ---- misc ----
@@ -769,6 +1043,7 @@ export class MaintenanceService {
     row: LogRow,
     task: Pick<TaskRow, 'slug' | 'name'> | null,
     tags: string[],
+    equipment: EquipmentRef,
   ): LogDTO {
     return {
       ...row,
@@ -776,6 +1051,8 @@ export class MaintenanceService {
       task_slug: task ? task.slug : null,
       task_name: task ? task.name : null,
       tags,
+      equipment_slug: equipment ? equipment.slug : null,
+      equipment_name: equipment ? equipment.name : null,
     };
   }
 
@@ -802,6 +1079,68 @@ export class MaintenanceService {
     const row = this.tasks.getBySlug(slug);
     if (!row) throw new ApiError(404, 'not_found', `Task "${slug}" not found`);
     return row;
+  }
+
+  private requireEquipment(slug: string): EquipmentRow {
+    const row = this.equipment.getBySlug(slug);
+    if (!row)
+      throw new ApiError(404, 'not_found', `Equipment "${slug}" not found`);
+    return row;
+  }
+
+  /**
+   * null / undefined -> null; otherwise the value must be the integer id of an
+   * existing equipment. A bad type is a 400, an unknown id a 404.
+   */
+  private resolveEquipmentId(value: number | null | undefined): number | null {
+    if (value == null) return null;
+    if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0)
+      throw new ApiError(
+        400,
+        'invalid_equipment',
+        'equipment_id must be a positive integer or null',
+      );
+    if (!this.equipment.getById(value))
+      throw new ApiError(404, 'not_found', `Equipment ${value} not found`);
+    return value;
+  }
+
+  /** Trim/normalize an equipment body; name required, price non-negative,
+   * dates ISO. Returns the columns minus `slug`. */
+  private validateEquipmentInput(
+    body: EquipmentInput,
+  ): Omit<NewEquipment, 'slug'> {
+    const name = (body.name ?? '').trim();
+    if (!name)
+      throw new ApiError(400, 'invalid_name', 'Equipment name is required');
+
+    const price = body.purchase_price;
+    if (price != null) {
+      if (typeof price !== 'number' || !Number.isFinite(price) || price < 0)
+        throw new ApiError(
+          400,
+          'invalid_price',
+          'purchase_price must be a non-negative number',
+        );
+    }
+
+    const asDate = (v: string | null | undefined, field: string) =>
+      v == null || v.trim() === '' ? null : this.validateDate(v, field);
+    const str = (v: string | null | undefined) => {
+      const s = typeof v === 'string' ? v.trim() : '';
+      return s === '' ? null : s;
+    };
+
+    return {
+      name,
+      description: body.description == null ? null : String(body.description),
+      brand: str(body.brand),
+      model: str(body.model),
+      serial_number: str(body.serial_number),
+      purchase_date: asDate(body.purchase_date, 'purchase_date'),
+      purchase_price: price ?? null,
+      warranty_until: asDate(body.warranty_until, 'warranty_until'),
+    };
   }
 
   private validateConsumables(

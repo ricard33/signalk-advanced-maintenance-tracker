@@ -16,7 +16,14 @@ import { MarkdownView } from './MarkdownView.js';
 import { TagInput } from './TagInput.js';
 import { ConsumablesPicker } from './ConsumablesPicker.js';
 import { PathPicker } from './PathPicker.js';
-import { createTask, updateTask, useTags, useHealth } from '../api/hooks.js';
+import { EquipmentSelect, mergeEquipmentTags } from './EquipmentSelect.js';
+import {
+  createTask,
+  updateTask,
+  useTags,
+  useHealth,
+  useEquipmentOptions,
+} from '../api/hooks.js';
 import { slugify } from '../lib/slug.js';
 import { formatDate, formatHours } from '../lib/format.js';
 import { toast } from '../lib/toasts.js';
@@ -46,6 +53,9 @@ export function TaskFormModal(props) {
   );
   const [preview, setPreview] = useState(false);
   const [tags, setTags] = useState(task ? task.tags.slice() : []);
+  const [equipmentId, setEquipmentId] = useState(
+    task && task.equipment_id ? String(task.equipment_id) : '',
+  );
   const [consumables, setConsumables] = useState(
     task && task.consumables ? task.consumables.slice() : [],
   );
@@ -84,6 +94,20 @@ export function TaskFormModal(props) {
     (t) => t.name,
   );
 
+  const equipmentOptions = useEquipmentOptions();
+  const equipmentList =
+    equipmentOptions.data && equipmentOptions.data.data
+      ? equipmentOptions.data.data
+      : [];
+  /** Picking an equipment pre-fills its tags (editable before save). */
+  const onEquipmentChange = (/** @type {string} */ id) => {
+    setEquipmentId(id);
+    if (!id) return;
+    const picked = equipmentList.find((e) => String(e.id) === id);
+    if (picked && picked.tags && picked.tags.length)
+      setTags((prev) => mergeEquipmentTags(prev, picked.tags));
+  };
+
   // Plugin-wide warning windows a blank field falls back to, shown as the
   // input placeholder (e.g. "Default: 10").
   const healthRes = useHealth();
@@ -112,6 +136,7 @@ export function TaskFormModal(props) {
       name: name.trim(),
       description: description.trim() ? description : null,
       tags: tags,
+      equipment_id: equipmentId ? Number(equipmentId) : null,
       consumables: consumables,
       is_recurring: isRecurring,
       runtime_path:
@@ -303,6 +328,18 @@ export function TaskFormModal(props) {
                   onInput=${(/** @type {any} */ e) => setDescription(e.currentTarget.value)}
                 />`
           }
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="task-equipment">Equipment</label>
+          <${EquipmentSelect}
+            id="task-equipment"
+            value=${equipmentId}
+            onChange=${onEquipmentChange}
+          />
+          <div class="field-hint">
+            The boat component this task maintains. Picking one adds its tags.
+          </div>
         </div>
 
         <div class="field">

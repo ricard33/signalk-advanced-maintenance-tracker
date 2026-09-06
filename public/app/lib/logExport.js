@@ -12,7 +12,15 @@ export const EXPORT_FORMATS = [
   { value: 'json', label: 'JSON', ext: 'json', mime: 'application/json' },
 ];
 
-const HEADERS = ['Task', 'Date', 'Runtime Hours', 'Logged By', 'Tags', 'Notes'];
+const HEADERS = [
+  'Task',
+  'Date',
+  'Equipment',
+  'Runtime Hours',
+  'Logged By',
+  'Tags',
+  'Notes',
+];
 
 /** @param {LogDTO} e @returns {(string|number|null|undefined)[]} */
 function row(e) {
@@ -20,6 +28,7 @@ function row(e) {
     // standalone (non-task) entries carry a title in place of a task name
     e.task_name ?? e.title,
     e.maintenance_date,
+    e.equipment_name || '',
     e.runtime_hours,
     e.logged_by,
     e.tags ? e.tags.join('; ') : '',
@@ -65,6 +74,7 @@ export function buildJson(entries) {
   const records = entries.map((e) => ({
     task: e.task_name ?? e.title,
     task_slug: e.task_slug,
+    equipment: e.equipment_name,
     maintenance_date: e.maintenance_date,
     runtime_hours: e.runtime_hours,
     logged_by: e.logged_by,

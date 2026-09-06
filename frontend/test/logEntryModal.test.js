@@ -122,6 +122,48 @@ describe('LogEntryModal — mark complete (§7.5)', () => {
     expect(JSON.parse(call[1].body).tags).toEqual(['Engines', 'Port']);
   });
 
+  it("Mark complete inherits the task's equipment and sends equipment_id", async () => {
+    const fn = mockFetch([
+      {
+        match: (m, u) => m === 'GET' && u.indexOf('/api/equipment') !== -1,
+        body: {
+          data: [{ id: 4, slug: 'port-engine', name: 'Port engine', tags: [] }],
+          total: 1,
+          page: 1,
+          pageSize: 500,
+        },
+      },
+      {
+        match: (m, u) =>
+          m === 'POST' && u.indexOf('/api/tasks/engine-oil-change/logs') !== -1,
+        status: 201,
+        body: { id: 9, task_slug: 'engine-oil-change' },
+      },
+    ]);
+    const onClose = vi.fn();
+    render(
+      html`<${LogEntryModal}
+        task=${makeTask({
+          equipment_id: 4,
+          equipment_name: 'Port engine',
+          equipment_slug: 'port-engine',
+        })}
+        onClose=${onClose}
+      />`,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('option', { name: 'Port engine' })).toBeTruthy(),
+    );
+    expect(
+      /** @type {HTMLSelectElement} */ (screen.getByLabelText('Equipment'))
+        .value,
+    ).toBe('4');
+    fireEvent.submit(document.getElementById('log-form'));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    const call = fn.mock.calls.find((c) => c[1] && c[1].method === 'POST');
+    expect(JSON.parse(call[1].body).equipment_id).toBe(4);
+  });
+
   it('prefills tags when editing an existing entry', async () => {
     const fn = mockFetch([
       {

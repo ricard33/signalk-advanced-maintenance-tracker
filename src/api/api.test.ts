@@ -390,6 +390,75 @@ describe('log endpoints', () => {
   });
 });
 
+describe('equipment endpoints', () => {
+  it('round-trips equipment through POST/GET/PUT/DELETE', async () => {
+    const create = await request(app)
+      .post(`${base}/equipment`)
+      .send({
+        name: 'Port engine',
+        brand: 'Yanmar',
+        purchase_price: 8500,
+        tags: ['Engines'],
+      });
+    expect(create.status).toBe(201);
+    expect(create.body.slug).toBe('port-engine');
+    expect(create.body.tags).toEqual(['Engines']);
+
+    const list = await request(app).get(`${base}/equipment`);
+    expect(list.body).toMatchObject({ total: 1, page: 1 });
+    expect(list.body.data[0].brand).toBe('Yanmar');
+
+    const detail = await request(app).get(`${base}/equipment/port-engine`);
+    expect(detail.body.name).toBe('Port engine');
+
+    const put = await request(app)
+      .put(`${base}/equipment/port-engine`)
+      .send({ model: '3YM30' });
+    expect(put.body.model).toBe('3YM30');
+    expect(put.body.brand).toBe('Yanmar');
+
+    const del = await request(app).delete(`${base}/equipment/port-engine`);
+    expect(del.status).toBe(204);
+    expect((await request(app).get(`${base}/equipment`)).body.total).toBe(0);
+  });
+
+  it('returns spec error shapes', async () => {
+    const missing = await request(app).get(`${base}/equipment/nope`);
+    expect(missing.status).toBe(404);
+    expect(missing.body.error.code).toBe('not_found');
+
+    const invalid = await request(app)
+      .post(`${base}/equipment`)
+      .send({ name: '  ' });
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.error.code).toBe('invalid_name');
+  });
+
+  it('links a task and a log to an equipment and filters by it', async () => {
+    const eq = await request(app)
+      .post(`${base}/equipment`)
+      .send({ name: 'Port engine' });
+    await request(app)
+      .post(`${base}/tasks`)
+      .send({ name: 'Oil', equipment_id: eq.body.id });
+
+    const task = await request(app).get(`${base}/tasks/oil`);
+    expect(task.body.equipment_slug).toBe('port-engine');
+
+    const filtered = await request(app).get(
+      `${base}/tasks?equipment=port-engine`,
+    );
+    expect(filtered.body.total).toBe(1);
+
+    await request(app)
+      .post(`${base}/tasks/oil/logs`)
+      .send({ maintenance_date: '2026-07-08T14:30:00Z' });
+    const logs = await request(app).get(`${base}/logs?equipment=port-engine`);
+    expect(logs.body.total).toBe(1);
+    expect(logs.body.data[0].equipment_name).toBe('Port engine');
+  });
+});
+
 describe('tags & health endpoints', () => {
   it('GET /tags returns usage counts', async () => {
     await request(app)

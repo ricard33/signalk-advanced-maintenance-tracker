@@ -21,6 +21,8 @@ const entries = [
     task_slug: 'engine-oil',
     task_name: 'Engine oil',
     tags: ['Engines', 'Winter'],
+    equipment_name: 'Port engine',
+    equipment_slug: 'port-engine',
   },
   {
     id: 2,
@@ -34,6 +36,8 @@ const entries = [
     task_slug: 'engine-oil',
     task_name: 'Engine oil',
     tags: [],
+    equipment_name: null,
+    equipment_slug: null,
   },
   // standalone (non-task) entry: title stands in for the task name
   {
@@ -48,6 +52,8 @@ const entries = [
     task_slug: null,
     task_name: null,
     tags: ['Admin'],
+    equipment_name: 'Liferaft',
+    equipment_slug: 'liferaft',
   },
 ];
 
@@ -55,24 +61,26 @@ describe('log export', () => {
   it('builds CSV with header row and quotes fields containing commas', () => {
     const csv = buildCsv(entries);
     const lines = csv.trimEnd().split('\r\n');
-    expect(lines[0]).toBe('Task,Date,Runtime Hours,Logged By,Tags,Notes');
-    expect(lines[1]).toBe(
-      'Engine oil,2026-01-02,12.5,zach,Engines; Winter,"Changed oil, filter"',
+    expect(lines[0]).toBe(
+      'Task,Date,Equipment,Runtime Hours,Logged By,Tags,Notes',
     );
-    // null runtime/logged_by and no tags render as empty; newline forces quoting.
-    expect(lines[2]).toBe('Engine oil,2026-02-03,,,,"Line one\nLine | two"');
+    expect(lines[1]).toBe(
+      'Engine oil,2026-01-02,Port engine,12.5,zach,Engines; Winter,"Changed oil, filter"',
+    );
+    // null runtime/logged_by, no equipment and no tags render as empty; newline forces quoting.
+    expect(lines[2]).toBe('Engine oil,2026-02-03,,,,,"Line one\nLine | two"');
     // standalone entry: its title fills the Task column
-    expect(lines[3]).toBe('Haul out,2026-03-04,,zach,Admin,');
+    expect(lines[3]).toBe('Haul out,2026-03-04,Liferaft,,zach,Admin,');
   });
 
   it('builds a Markdown table, escaping pipes and newlines', () => {
     const md = buildMarkdown(entries);
     expect(md).toContain('# SignalK Maintenance Log');
     expect(md).toContain(
-      '| Task | Date | Runtime Hours | Logged By | Tags | Notes |',
+      '| Task | Date | Equipment | Runtime Hours | Logged By | Tags | Notes |',
     );
     expect(md).toContain(
-      '| Engine oil | 2026-01-02 | 12.5 | zach | Engines; Winter | Changed oil, filter |',
+      '| Engine oil | 2026-01-02 | Port engine | 12.5 | zach | Engines; Winter | Changed oil, filter |',
     );
     expect(md).toContain('Line one<br>Line \\| two');
   });
@@ -83,6 +91,7 @@ describe('log export', () => {
       {
         task: 'Engine oil',
         task_slug: 'engine-oil',
+        equipment: 'Port engine',
         maintenance_date: '2026-01-02',
         runtime_hours: 12.5,
         logged_by: 'zach',
@@ -92,6 +101,7 @@ describe('log export', () => {
       {
         task: 'Engine oil',
         task_slug: 'engine-oil',
+        equipment: null,
         maintenance_date: '2026-02-03',
         runtime_hours: null,
         logged_by: null,
@@ -101,6 +111,7 @@ describe('log export', () => {
       {
         task: 'Haul out',
         task_slug: null,
+        equipment: 'Liferaft',
         maintenance_date: '2026-03-04',
         runtime_hours: null,
         logged_by: 'zach',

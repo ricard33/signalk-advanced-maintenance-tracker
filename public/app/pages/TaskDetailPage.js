@@ -244,6 +244,17 @@ export function TaskDetailPage(props) {
         }
       </div>
 
+      ${
+        task.equipment_slug
+          ? html`<p class="detail-subhead">
+              Equipment:${' '}
+              <a href=${'#/equipment/' + encodeURIComponent(task.equipment_slug)}
+                >${task.equipment_name}</a
+              >
+            </p>`
+          : null
+      }
+
       <div class="detail-grid">
         ${
           // Nothing to say without a description or parts: drop the card.

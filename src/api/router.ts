@@ -158,6 +158,7 @@ export function mountApi(
       res.json(
         s.service.listMasterLog({
           search: str(req.query.search),
+          equipment: str(req.query.equipment),
           sort,
           order,
           page,
@@ -188,6 +189,54 @@ export function mountApi(
     '/api/tags',
     withServices((s, _req, res) => {
       res.json({ data: s.service.listTags() });
+    }),
+  );
+
+  // ---- equipment (§8.7) ----
+
+  router.get(
+    '/api/equipment',
+    withServices((s, req, res) => {
+      const { page, pageSize } = parsePaging(req);
+      res.json(
+        s.service.listEquipment({
+          search: str(req.query.search),
+          tags: csv(req.query.tags),
+          sort: pickEnum(req.query.sort, ['name', 'created_at'] as const),
+          order: pickEnum(req.query.order, ['asc', 'desc'] as const),
+          page,
+          pageSize,
+        }),
+      );
+    }),
+  );
+
+  router.post(
+    '/api/equipment',
+    withServices((s, req, res) => {
+      res.status(201).json(s.service.createEquipment(req.body ?? {}));
+    }),
+  );
+
+  router.get(
+    '/api/equipment/:slug',
+    withServices((s, req, res) => {
+      res.json(s.service.getEquipment(req.params.slug));
+    }),
+  );
+
+  router.put(
+    '/api/equipment/:slug',
+    withServices((s, req, res) => {
+      res.json(s.service.updateEquipment(req.params.slug, req.body ?? {}));
+    }),
+  );
+
+  router.delete(
+    '/api/equipment/:slug',
+    withServices((s, req, res) => {
+      s.service.deleteEquipment(req.params.slug);
+      res.status(204).end();
     }),
   );
 
@@ -249,6 +298,7 @@ function parseTaskListQuery(req: Request): TaskListQuery {
   return {
     search: str(req.query.search),
     tags: csv(req.query.tags),
+    equipment: str(req.query.equipment),
     status: csv(req.query.status)?.filter((s): s is Status =>
       ['overdue', 'due_soon', 'todo', 'ok', 'pending', 'archived'].includes(s),
     ),

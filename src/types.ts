@@ -46,6 +46,9 @@ export interface TaskRow {
   /** SQLite boolean (0/1). 0 = a one-off "todo" item: no intervals or runtime
    * path (service-enforced), optional due date, archived when completed. */
   is_recurring: number;
+  /** The boat component this task maintains (§5.9). null = none; the FK is
+   * ON DELETE SET NULL so deleting the equipment keeps the task. */
+  equipment_id: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -61,6 +64,8 @@ export interface LogRow {
   runtime_hours: number | null;
   notes: string | null;
   logged_by: string | null;
+  /** The boat component this entry concerns (§5.9). null = none. */
+  equipment_id: number | null;
   created_at: string;
 }
 
@@ -71,6 +76,9 @@ export interface LogDTO extends LogRow {
   /** Freeform tags on the entry (§5.2), assembled by the service layer — not a
    * stored column. Wholesale-replaced by `LogInput.tags` on write. */
   tags: string[];
+  /** Resolved from `equipment_id` by the service layer (null when unlinked). */
+  equipment_slug: string | null;
+  equipment_name: string | null;
 }
 
 export interface ComputedFields {
@@ -136,12 +144,42 @@ export interface TaskDTO extends ComputedFields {
   last_runtime: number | null;
   is_archived: boolean;
   is_recurring: boolean;
+  /** The linked boat component (§5.9); null = none. `equipment_name` /
+   * `equipment_slug` are resolved by the service layer for display. */
+  equipment_id: number | null;
+  equipment_name: string | null;
+  equipment_slug: string | null;
   created_at: string;
   updated_at: string;
   /** Items in signalk-stowage-mgmt this task consumes on completion — see
    * docs/inventory-interaction.md. Empty when the integration isn't
    * configured (stowageMgmtUrl unset) or none are linked. */
   consumables: TaskConsumableDTO[];
+}
+
+export interface EquipmentRow {
+  id: number;
+  slug: string;
+  name: string;
+  description: string | null;
+  brand: string | null;
+  model: string | null;
+  serial_number: string | null;
+  /** ISO date; stored like maintenance dates. */
+  purchase_date: string | null;
+  /** Bare number, no currency handling. */
+  purchase_price: number | null;
+  warranty_until: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EquipmentDTO extends EquipmentRow {
+  /** Freeform tags (§5.2), assembled by the service layer. */
+  tags: string[];
+  /** How many tasks / log entries currently reference this equipment. */
+  task_count: number;
+  log_count: number;
 }
 
 export interface Page<T> {
@@ -179,6 +217,23 @@ export interface TaskInput {
   /** Wholesale-replaces the task's linked consumables when present, same
    * semantics as `tags` (docs/inventory-interaction.md). */
   consumables?: TaskConsumableDTO[];
+  /** Links the task to a boat component (§5.9). null clears the link; an
+   * unknown id is rejected. Omitted = unchanged on update. */
+  equipment_id?: number | null;
+}
+
+export interface EquipmentInput {
+  name?: string;
+  slug?: string;
+  description?: string | null;
+  brand?: string | null;
+  model?: string | null;
+  serial_number?: string | null;
+  purchase_date?: string | null;
+  purchase_price?: number | null;
+  warranty_until?: string | null;
+  /** Wholesale-replaces the equipment's tags when present. */
+  tags?: string[];
 }
 
 export interface LogInput {
@@ -191,6 +246,10 @@ export interface LogInput {
   /** Wholesale-replaces the entry's tags when present, same semantics as
    * `TaskInput.tags`. */
   tags?: string[];
+  /** Links the entry to a boat component (§5.9). On `POST /tasks/:slug/logs`
+   * an omitted value inherits the task's equipment; elsewhere omitted = none
+   * (create) or unchanged (update). null clears it; an unknown id is rejected. */
+  equipment_id?: number | null;
   /** Opt-in per completion, defaults to true when the task has linked
    * consumables — set false to log the work without touching stowage-mgmt
    * stock (docs/inventory-interaction.md). */

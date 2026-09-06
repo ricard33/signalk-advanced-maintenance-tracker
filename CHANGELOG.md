@@ -1,3 +1,41 @@
+# v1.6.0
+
+Equipment tracking, plus tags on log entries.
+
+## Highlights
+
+- **Equipment.** A new top-level entity for the boat's components — engines,
+  hull, mast, instruments, safety gear. Each has a name, description, and
+  optional brand / model / serial number / purchase date / purchase price /
+  warranty date, and can carry tags. A new **Equipment** page lists, creates,
+  edits and deletes them; each equipment has its own detail page showing the
+  tasks and log entries linked to it. A task or a log entry can be associated
+  with one equipment (or none): pick it from a dropdown in the task form and
+  the "Mark complete" / log-entry modal — choosing one pre-fills the Tags
+  field with the equipment's tags. The task list gains an Equipment column and
+  an equipment filter; the master log gains an Equipment column, matches
+  equipment names in search, and includes an Equipment column in its export.
+  Deleting an equipment unlinks its tasks and log entries — their history is
+  kept.
+- **Tags on log entries.** Log entries — whether tied to a task or standalone —
+  can now carry tags from the same vocabulary as tasks. A task's completion
+  inherits the task's tags by default (editable before saving). Tags show as a
+  column in the master log and per-task log, and in the log export; master-log
+  search matches tag names.
+
+## Smaller changes and fixes
+
+- The task list now has a stable, total sort order: entries with the same sort
+  key and name are broken by creation order, so the list no longer reshuffles
+  between the 5-second polls (visible with many same-named tasks).
+
+## Migration notes
+
+- Migration 9 adds the `equipment` and `equipment_tags` tables and an
+  `equipment_id` column on `tasks` and `log_entries`. Migration 8 (from an
+  earlier build in this line) adds `log_tags`. Both are purely additive — no
+  existing data is changed or back-filled.
+
 # v1.5.1
 
 Phone-sized polish for the task list and modals.

@@ -49,6 +49,9 @@
  * @property {Status|null} time_status
  * @property {boolean} is_archived
  * @property {boolean} is_recurring false = one-off todo item
+ * @property {number|null} equipment_id linked boat component (§5.9); null = none
+ * @property {string|null} equipment_name resolved by the service layer
+ * @property {string|null} equipment_slug resolved by the service layer
  * @property {Status} status
  * @property {number} status_rank
  * @property {number} urgency
@@ -70,6 +73,9 @@
  * @property {string|null} task_slug null on standalone entries
  * @property {string|null} task_name null on standalone entries — show `title` instead
  * @property {string[]} tags freeform tags on the entry
+ * @property {number|null} equipment_id linked boat component (§5.9); null = none
+ * @property {string|null} equipment_slug resolved by the service layer
+ * @property {string|null} equipment_name resolved by the service layer
  * @property {string[]} [consumable_warnings]
  */
 
@@ -78,6 +84,39 @@
  * @property {number} id
  * @property {string} name
  * @property {number} count
+ */
+
+/**
+ * @typedef {Object} EquipmentDTO
+ * @property {number} id
+ * @property {string} slug
+ * @property {string} name
+ * @property {string|null} description markdown
+ * @property {string|null} brand
+ * @property {string|null} model
+ * @property {string|null} serial_number
+ * @property {string|null} purchase_date ISO date
+ * @property {number|null} purchase_price
+ * @property {string|null} warranty_until ISO date
+ * @property {string[]} tags
+ * @property {number} task_count linked tasks
+ * @property {number} log_count linked log entries
+ * @property {string} created_at
+ * @property {string} updated_at
+ */
+
+/**
+ * @typedef {Object} EquipmentInput
+ * @property {string} [name]
+ * @property {string} [slug]
+ * @property {string|null} [description]
+ * @property {string|null} [brand]
+ * @property {string|null} [model]
+ * @property {string|null} [serial_number]
+ * @property {string|null} [purchase_date]
+ * @property {number|null} [purchase_price]
+ * @property {string|null} [warranty_until]
+ * @property {string[]} [tags]
  */
 
 /**
@@ -107,6 +146,7 @@
  * @property {boolean} [is_archived]
  * @property {boolean} [is_recurring] false = one-off todo item
  * @property {TaskConsumableDTO[]} [consumables]
+ * @property {number|null} [equipment_id] links to a boat component (§5.9)
  */
 
 /**
@@ -116,6 +156,7 @@
  * @property {string|null} [notes]
  * @property {string|null} [title] standalone (non-task) entries only
  * @property {string[]} [tags] wholesale-replaces the entry's tags when present
+ * @property {number|null} [equipment_id] links to a boat component (§5.9)
  * @property {boolean} [consume_stock]
  * @property {{ item_id: string, placements: { placement_id: string, quantity: number }[] }[]} [consumable_allocations]
  */

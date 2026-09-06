@@ -607,6 +607,17 @@ pre {
 .table td.cell-tags .chips {
   margin: -2px 0;
 }
+.table td.cell-equipment,
+.table th.cell-equipment {
+  max-width: 12em;
+}
+
+/* task detail: the linked-equipment line under the header */
+.detail-subhead {
+  margin: 0 0 8px;
+  color: var(--text-muted);
+  font-size: 15px;
+}
 
 /* full-width detail row (log notes) rendered under its entry row */
 .table tr.has-detail td {

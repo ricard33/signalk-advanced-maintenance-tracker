@@ -126,6 +126,17 @@ export function MasterLogPage() {
       render: (/** @type {LogDTO} */ e) => formatDate(e.maintenance_date),
     },
     {
+      key: 'equipment',
+      label: 'Equipment',
+      className: 'cell-equipment',
+      render: (/** @type {LogDTO} */ e) =>
+        e.equipment_slug
+          ? html`<a href=${'#/equipment/' + encodeURIComponent(e.equipment_slug)}
+              >${e.equipment_name}</a
+            >`
+          : html`<span class="muted">—</span>`,
+    },
+    {
       key: 'tags',
       label: 'Tags',
       className: 'cell-tags',

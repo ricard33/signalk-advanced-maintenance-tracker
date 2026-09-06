@@ -178,4 +178,45 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 9,
+    up(db) {
+      // v1.6: "equipment" — a physical boat component (engine, hull, mast,
+      // instrument, safety gear). A task or a log entry may reference at most
+      // one, or none. Equipment carries its own freeform tags (equipment_tags,
+      // mirroring task_tags/log_tags — a tag is orphaned only when nothing at
+      // all references it). Deleting an equipment SET NULLs the links so the
+      // maintenance history survives.
+      //
+      // SQLite allows ADD COLUMN with a REFERENCES clause as long as the
+      // column's default is NULL, which it is here.
+      db.exec(`
+        CREATE TABLE equipment (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          slug TEXT NOT NULL UNIQUE,
+          name TEXT NOT NULL,
+          description TEXT,
+          brand TEXT,
+          model TEXT,
+          serial_number TEXT,
+          purchase_date TEXT,
+          purchase_price REAL,
+          warranty_until TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+
+        CREATE TABLE equipment_tags (
+          equipment_id INTEGER NOT NULL REFERENCES equipment(id) ON DELETE CASCADE,
+          tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+          PRIMARY KEY (equipment_id, tag_id)
+        );
+
+        ALTER TABLE tasks ADD COLUMN equipment_id INTEGER REFERENCES equipment(id) ON DELETE SET NULL;
+        ALTER TABLE log_entries ADD COLUMN equipment_id INTEGER REFERENCES equipment(id) ON DELETE SET NULL;
+        CREATE INDEX idx_tasks_equipment ON tasks (equipment_id);
+        CREATE INDEX idx_log_equipment ON log_entries (equipment_id);
+      `);
+    },
+  },
 ];

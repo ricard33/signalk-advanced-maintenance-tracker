@@ -60,6 +60,19 @@ export class TagsRepo {
     this.pruneOrphans();
   }
 
+  /** Replace an equipment's tag set; same semantics as setTaskTags. */
+  setEquipmentTags(equipmentId: number, names: string[]): void {
+    const ids = this.resolveIds(names);
+    this.db
+      .prepare(`DELETE FROM equipment_tags WHERE equipment_id = ?`)
+      .run(equipmentId);
+    const insert = this.db.prepare(
+      `INSERT INTO equipment_tags (equipment_id, tag_id) VALUES (?, ?)`,
+    );
+    for (const tagId of ids) insert.run(equipmentId, tagId);
+    this.pruneOrphans();
+  }
+
   tagsForTask(taskId: number): string[] {
     const rows = this.db
       .prepare(
@@ -82,6 +95,17 @@ export class TagsRepo {
     return rows.map((r) => r.name);
   }
 
+  tagsForEquipment(equipmentId: number): string[] {
+    const rows = this.db
+      .prepare(
+        `SELECT t.name AS name FROM tags t
+         JOIN equipment_tags et ON et.tag_id = t.id
+         WHERE et.equipment_id = ? ORDER BY t.name COLLATE NOCASE`,
+      )
+      .all(equipmentId) as unknown as { name: string }[];
+    return rows.map((r) => r.name);
+  }
+
   /** One query for the whole task list: task_id -> tag names. */
   tagsByTask(): Map<number, string[]> {
     return this.groupNames(
@@ -96,6 +120,15 @@ export class TagsRepo {
     return this.groupNames(
       `SELECT lt.log_id AS owner_id, t.name AS name FROM tags t
        JOIN log_tags lt ON lt.tag_id = t.id
+       ORDER BY t.name COLLATE NOCASE`,
+    );
+  }
+
+  /** One query for the whole equipment list: equipment_id -> tag names. */
+  tagsByEquipment(): Map<number, string[]> {
+    return this.groupNames(
+      `SELECT et.equipment_id AS owner_id, t.name AS name FROM tags t
+       JOIN equipment_tags et ON et.tag_id = t.id
        ORDER BY t.name COLLATE NOCASE`,
     );
   }
@@ -119,17 +152,20 @@ export class TagsRepo {
       .prepare(
         `SELECT t.id AS id, t.name AS name,
            (SELECT COUNT(*) FROM task_tags WHERE tag_id = t.id)
-             + (SELECT COUNT(*) FROM log_tags WHERE tag_id = t.id) AS count
+             + (SELECT COUNT(*) FROM log_tags WHERE tag_id = t.id)
+             + (SELECT COUNT(*) FROM equipment_tags WHERE tag_id = t.id) AS count
          FROM tags t ORDER BY t.name COLLATE NOCASE`,
       )
       .all() as unknown as TagCount[];
   }
 
-  /** Remove tags no task and no log references (§5.2). */
+  /** Remove tags nothing (task, log, or equipment) references (§5.2). */
   pruneOrphans(): void {
     this.db.exec(
       `DELETE FROM tags WHERE id NOT IN (
-         SELECT tag_id FROM task_tags UNION SELECT tag_id FROM log_tags
+         SELECT tag_id FROM task_tags
+         UNION SELECT tag_id FROM log_tags
+         UNION SELECT tag_id FROM equipment_tags
        )`,
     );
   }

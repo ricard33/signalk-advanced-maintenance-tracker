@@ -11,6 +11,8 @@ import { useResource, invalidate } from './resource.js';
 /** @typedef {import('../types.js').TagDTO} TagDTO */
 /** @typedef {import('../types.js').TaskInput} TaskInput */
 /** @typedef {import('../types.js').LogInput} LogInput */
+/** @typedef {import('../types.js').EquipmentDTO} EquipmentDTO */
+/** @typedef {import('../types.js').EquipmentInput} EquipmentInput */
 
 /** Default poll interval for live-updating lists (§7.6). */
 export const POLL_MS = 5000;
@@ -80,6 +82,45 @@ export function useTags() {
 }
 
 /**
+ * @param {Record<string, string|number|undefined|null>} [params]
+ * @returns {import('./resource.js').ResourceState<import('../types.js').Page<EquipmentDTO>>}
+ */
+export function useEquipmentList(params) {
+  const query = buildQuery(params);
+  return useResource(
+    'equipment' + query,
+    () => apiFetch('/equipment' + query),
+    {
+      refetchInterval: POLL_MS,
+    },
+  );
+}
+
+/**
+ * @param {string} slug
+ * @returns {import('./resource.js').ResourceState<EquipmentDTO>}
+ */
+export function useEquipment(slug) {
+  return useResource(
+    'equipment/' + slug,
+    () => apiFetch('/equipment/' + encodeSlug(slug)),
+    { refetchInterval: POLL_MS },
+  );
+}
+
+/**
+ * Flat list of all equipment, for `<select>`s and equipment-tag pre-fill.
+ * @returns {import('./resource.js').ResourceState<import('../types.js').Page<EquipmentDTO>>}
+ */
+export function useEquipmentOptions() {
+  return useResource(
+    'equipment?pageSize=500',
+    () => apiFetch('/equipment?pageSize=500'),
+    { refetchInterval: POLL_MS },
+  );
+}
+
+/**
  * Plugin health/version (§8.5). Fetched once; the version can't change
  * without a server restart, so no polling.
  * @returns {import('./resource.js').ResourceState<{ version: string, defaults: { runtime_warning_hours: number, time_warning_days: number } }>}
@@ -96,7 +137,7 @@ export function useHealth() {
  */
 export async function createTask(input) {
   const task = await apiFetch('/tasks', { method: 'POST', body: input });
-  invalidate('tasks', 'tags');
+  invalidate('tasks', 'tags', 'equipment');
   return task;
 }
 
@@ -110,7 +151,7 @@ export async function updateTask(slug, input) {
     method: 'PUT',
     body: input,
   });
-  invalidate('tasks', 'task/' + slug, 'tags', 'logs');
+  invalidate('tasks', 'task/' + slug, 'tags', 'logs', 'equipment');
   if (task && task.slug !== slug) invalidate('task/' + task.slug);
   return task;
 }
@@ -118,7 +159,7 @@ export async function updateTask(slug, input) {
 /** @param {string} slug */
 export async function deleteTask(slug) {
   await apiFetch('/tasks/' + encodeSlug(slug), { method: 'DELETE' });
-  invalidate('tasks', 'task/' + slug, 'tags', 'logs');
+  invalidate('tasks', 'task/' + slug, 'tags', 'logs', 'equipment');
 }
 
 /**
@@ -132,7 +173,7 @@ export async function addLog(slug, input) {
     method: 'POST',
     body: input,
   });
-  invalidate('tasks', 'task/' + slug, 'logs', 'tags');
+  invalidate('tasks', 'task/' + slug, 'logs', 'tags', 'equipment');
   return entry;
 }
 
@@ -144,7 +185,7 @@ export async function addLog(slug, input) {
  */
 export async function addStandaloneLog(input) {
   const entry = await apiFetch('/logs', { method: 'POST', body: input });
-  invalidate('logs', 'tags');
+  invalidate('logs', 'tags', 'equipment');
   return entry;
 }
 
@@ -155,7 +196,7 @@ export async function addStandaloneLog(input) {
  */
 export async function updateLog(id, input) {
   const entry = await apiFetch('/logs/' + id, { method: 'PUT', body: input });
-  invalidate('tasks', 'logs', 'tags');
+  invalidate('tasks', 'logs', 'tags', 'equipment');
   if (entry && entry.task_slug) invalidate('task/' + entry.task_slug);
   return entry;
 }
@@ -166,6 +207,37 @@ export async function updateLog(id, input) {
  */
 export async function deleteLog(id, taskSlug) {
   await apiFetch('/logs/' + id, { method: 'DELETE' });
-  invalidate('tasks', 'logs', 'tags');
+  invalidate('tasks', 'logs', 'tags', 'equipment');
   if (taskSlug) invalidate('task/' + taskSlug);
+}
+
+/**
+ * @param {EquipmentInput} input
+ * @returns {Promise<EquipmentDTO>}
+ */
+export async function createEquipment(input) {
+  const eq = await apiFetch('/equipment', { method: 'POST', body: input });
+  invalidate('equipment', 'tags');
+  return eq;
+}
+
+/**
+ * @param {string} slug
+ * @param {EquipmentInput} input
+ * @returns {Promise<EquipmentDTO>}
+ */
+export async function updateEquipment(slug, input) {
+  const eq = await apiFetch('/equipment/' + encodeSlug(slug), {
+    method: 'PUT',
+    body: input,
+  });
+  // equipment_name shows on task/log rows, so refresh those lists too.
+  invalidate('equipment', 'tags', 'tasks', 'task', 'logs');
+  return eq;
+}
+
+/** @param {string} slug */
+export async function deleteEquipment(slug) {
+  await apiFetch('/equipment/' + encodeSlug(slug), { method: 'DELETE' });
+  invalidate('equipment', 'tags', 'tasks', 'task', 'logs');
 }

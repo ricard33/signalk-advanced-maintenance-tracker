@@ -12,10 +12,14 @@ import { LoginModal } from './components/LoginModal.js';
 import { TaskListPage } from './pages/TaskListPage.js';
 import { TaskDetailPage } from './pages/TaskDetailPage.js';
 import { MasterLogPage } from './pages/MasterLogPage.js';
+import { EquipmentListPage } from './pages/EquipmentListPage.js';
+import { EquipmentDetailPage } from './pages/EquipmentDetailPage.js';
 
 export function App() {
   const current = route.value;
   const detailParams = matchPath('/tasks/:slug', current.path);
+  const equipmentDetail = matchPath('/equipment/:slug', current.path);
+  const onEquipment = current.path === '/equipment' || !!equipmentDetail;
   const health = useHealth();
   const version = health.data && health.data.version;
 
@@ -25,6 +29,13 @@ export function App() {
       slug=${detailParams.slug}
       key=${detailParams.slug}
     />`;
+  } else if (equipmentDetail) {
+    page = html`<${EquipmentDetailPage}
+      slug=${equipmentDetail.slug}
+      key=${equipmentDetail.slug}
+    />`;
+  } else if (current.path === '/equipment') {
+    page = html`<${EquipmentListPage} />`;
   } else if (current.path === '/log') {
     page = html`<${MasterLogPage} />`;
   } else {
@@ -37,9 +48,14 @@ export function App() {
         <a class="shell-title" href="#/">Maintenance Tracker</a>
         <nav class="shell-nav">
           <a
-            class=${'nav-link' + (!detailParams && current.path !== '/log' ? ' active' : '')}
+            class=${'nav-link' + (!detailParams && !onEquipment && current.path !== '/log' ? ' active' : '')}
             href="#/"
             >Tasks</a
+          >
+          <a
+            class=${'nav-link' + (onEquipment ? ' active' : '')}
+            href="#/equipment"
+            >Equipment</a
           >
           <a
             class=${'nav-link' + (current.path === '/log' ? ' active' : '')}

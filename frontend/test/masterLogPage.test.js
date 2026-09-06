@@ -31,6 +31,8 @@ const logs = [
     task_slug: null,
     task_name: null,
     tags: ['Winter', 'Yard'],
+    equipment_slug: 'liferaft',
+    equipment_name: 'Liferaft',
   },
 ];
 
@@ -44,7 +46,7 @@ describe('master log page (§7.4)', () => {
     expect(screen.queryByRole('link', { name: 'Haul out' })).toBeNull();
   });
 
-  it("renders an entry's tags as chips in a column before Runtime", async () => {
+  it('renders equipment + tags columns before Runtime', async () => {
     mockFetch(apiRoutes({ logs }));
     authState.value = { checked: true, isLoggedIn: false, username: null };
     render(html`<${MasterLogPage} />`);
@@ -53,15 +55,29 @@ describe('master log page (§7.4)', () => {
     const headers = Array.from(document.querySelectorAll('.table th')).map(
       (h) => h.textContent.trim(),
     );
-    expect(headers).toEqual(['Task', 'Date', 'Tags', 'Runtime', 'By']);
+    expect(headers).toEqual([
+      'Task',
+      'Date',
+      'Equipment',
+      'Tags',
+      'Runtime',
+      'By',
+    ]);
 
     const chips = Array.from(
       document.querySelectorAll('.table td.cell-tags .tag'),
     ).map((el) => el.textContent);
     expect(chips).toEqual(['Winter', 'Yard']);
-    // the task-linked entry has no tags → dash
+    // the standalone entry links to its equipment
+    expect(screen.getByRole('link', { name: 'Liferaft' })).toBeTruthy();
+    // the task-linked entry has neither → dashes
     expect(
       document.querySelectorAll('.table td.cell-tags')[0].textContent.trim(),
+    ).toBe('—');
+    expect(
+      document
+        .querySelectorAll('.table td.cell-equipment')[0]
+        .textContent.trim(),
     ).toBe('—');
   });
 

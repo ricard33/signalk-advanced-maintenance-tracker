@@ -4,7 +4,7 @@
  */
 import { html } from '../lib/html.js';
 import { useState, useEffect } from '../../vendor/preact-hooks.js';
-import { useTasks, useTags } from '../api/hooks.js';
+import { useTasks, useTags, useEquipmentOptions } from '../api/hooks.js';
 import { useAuth } from '../auth/auth.js';
 import { useListParams } from '../lib/useListParams.js';
 import {
@@ -31,6 +31,7 @@ export function TaskListPage() {
   const page = parseInt(params.page || '1', 10) || 1;
   const search = params.search || '';
   const tagsCsv = params.tags || '';
+  const equipmentSlug = params.equipment || '';
   const statusCsv = params.status || '';
   const sort = params.sort || '';
   const order = params.order || '';
@@ -52,6 +53,7 @@ export function TaskListPage() {
   const tasksRes = useTasks({
     search: search || undefined,
     tags: tagsCsv || undefined,
+    equipment: equipmentSlug || undefined,
     status: statusCsv || undefined,
     sort: sort || undefined,
     order: order || undefined,
@@ -59,6 +61,7 @@ export function TaskListPage() {
     pageSize: PAGE_SIZE,
   });
   const tagsRes = useTags();
+  const equipmentRes = useEquipmentOptions();
 
   /** @type {[null|undefined, any]} editor: undefined=closed, null=create (edit lives on task detail) */
   const [editorTask, setEditorTask] = useState(
@@ -95,6 +98,15 @@ export function TaskListPage() {
       page: undefined,
     });
 
+  const equipmentList =
+    equipmentRes.data && equipmentRes.data.data ? equipmentRes.data.data : [];
+  /** @param {string} slug */
+  const selectEquipment = (slug) =>
+    update({
+      equipment: equipmentSlug === slug ? undefined : slug,
+      page: undefined,
+    });
+
   /** @param {string} key */
   const onSort = (key) => {
     if (sort === key) update({ order: order === 'asc' ? 'desc' : 'asc' });
@@ -119,6 +131,17 @@ export function TaskListPage() {
       className: 'col-name',
       render: (/** @type {TaskDTO} */ t) =>
         html`<a href=${'#/tasks/' + encodeURIComponent(t.slug)}>${t.name}</a>`,
+    },
+    {
+      key: 'equipment',
+      label: 'Equipment',
+      className: 'hide-sm cell-equipment',
+      render: (/** @type {TaskDTO} */ t) =>
+        t.equipment_slug
+          ? html`<a href=${'#/equipment/' + encodeURIComponent(t.equipment_slug)}
+              >${t.equipment_name}</a
+            >`
+          : html`<span class="muted">—</span>`,
     },
     {
       key: 'tags',
@@ -221,6 +244,36 @@ export function TaskListPage() {
 
       <div class="chip-filters">
         ${
+          equipmentList.length
+            ? html`
+                <div
+                  class="chips"
+                  role="group"
+                  aria-labelledby="equipment-filter-label"
+                >
+                  <span class="chips-label" id="equipment-filter-label">
+                    EQUIPMENT:
+                  </span>
+                  ${equipmentList.map(
+                    (
+                      /** @type {import('../types.js').EquipmentDTO} */ eq,
+                    ) => html`
+                      <button
+                        type="button"
+                        key=${eq.slug}
+                        class=${'chip' + (equipmentSlug === eq.slug ? ' selected' : '')}
+                        aria-pressed=${equipmentSlug === eq.slug}
+                        onClick=${() => selectEquipment(eq.slug)}
+                      >
+                        ${eq.name}
+                      </button>
+                    `,
+                  )}
+                </div>
+              `
+            : null
+        }
+        ${
           tagList.length
             ? html`
                 <div class="chips" role="group" aria-labelledby="tag-filter-label">
@@ -273,7 +326,7 @@ export function TaskListPage() {
                 order=${order}
                 onSort=${onSort}
                 loading=${tasksRes.loading}
-                emptyMessage=${search || tagsCsv || statusCsv ? 'No tasks match your filters.' : 'No maintenance tasks yet.'}
+                emptyMessage=${search || tagsCsv || equipmentSlug || statusCsv ? 'No tasks match your filters.' : 'No maintenance tasks yet.'}
               />
               ${
                 pageData

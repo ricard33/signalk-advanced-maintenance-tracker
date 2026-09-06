@@ -11,7 +11,14 @@ import { Modal } from './Modal.js';
 import { FormError } from './FormError.js';
 import { PlacementAllocator } from './PlacementAllocator.js';
 import { TagInput } from './TagInput.js';
-import { addLog, addStandaloneLog, updateLog, useTags } from '../api/hooks.js';
+import { EquipmentSelect, mergeEquipmentTags } from './EquipmentSelect.js';
+import {
+  addLog,
+  addStandaloneLog,
+  updateLog,
+  useTags,
+  useEquipmentOptions,
+} from '../api/hooks.js';
 import { useStowageItems } from '../api/stowage.js';
 import { toDateInput } from '../lib/format.js';
 import { toast } from '../lib/toasts.js';
@@ -68,6 +75,29 @@ export function LogEntryModal(props) {
   const tagSuggestions = (
     tagsRes.data && tagsRes.data.data ? tagsRes.data.data : []
   ).map((/** @type {import('../types.js').TagDTO} */ t) => t.name);
+
+  // Edit keeps the entry's own equipment; "Mark complete" inherits the task's;
+  // a standalone entry starts unlinked.
+  const [equipmentId, setEquipmentId] = useState(
+    isEdit && entry && entry.equipment_id
+      ? String(entry.equipment_id)
+      : task && task.equipment_id
+        ? String(task.equipment_id)
+        : '',
+  );
+  const equipmentOptions = useEquipmentOptions();
+  const equipmentList =
+    equipmentOptions.data && equipmentOptions.data.data
+      ? equipmentOptions.data.data
+      : [];
+  const onEquipmentChange = (/** @type {string} */ id) => {
+    setEquipmentId(id);
+    if (!id) return;
+    const picked = equipmentList.find((e) => String(e.id) === id);
+    if (picked && picked.tags && picked.tags.length)
+      setTags((prev) => mergeEquipmentTags(prev, picked.tags));
+  };
+
   const hasConsumables =
     !isEdit && !!task && !!task.consumables && task.consumables.length > 0;
   const [consumeStock, setConsumeStock] = useState(true);
@@ -128,6 +158,7 @@ export function LogEntryModal(props) {
     };
     if (isStandalone) input.title = title.trim();
     input.tags = tags;
+    input.equipment_id = equipmentId ? Number(equipmentId) : null;
     if (runtime.trim() !== '') {
       const hours = Number(runtime);
       if (!isFinite(hours) || hours < 0) {
@@ -264,6 +295,15 @@ export function LogEntryModal(props) {
               </div>`
             : null
         }
+
+        <div class="field">
+          <label class="field-label" for="log-equipment">Equipment</label>
+          <${EquipmentSelect}
+            id="log-equipment"
+            value=${equipmentId}
+            onChange=${onEquipmentChange}
+          />
+        </div>
 
         <div class="field">
           <label class="field-label">Tags</label>

@@ -41,12 +41,13 @@ export function mockFetch(routes) {
   return fn;
 }
 
-/** Standard API-shaped routes for pages: tasks list, tags, logs. */
+/** Standard API-shaped routes for pages: tasks list, tags, logs, equipment. */
 export function apiRoutes(overrides) {
   const o = overrides || {};
   const tasks = o.tasks || [];
   const logs = o.logs || [];
   const tags = o.tags || [];
+  const equipment = o.equipment || [];
   return [
     {
       match: (m, u) => m === 'GET' && u.indexOf('/api/tasks?') !== -1,
@@ -59,6 +60,10 @@ export function apiRoutes(overrides) {
     {
       match: (m, u) => m === 'GET' && u.indexOf('/api/tags') !== -1,
       body: { data: tags },
+    },
+    {
+      match: (m, u) => m === 'GET' && u.indexOf('/api/equipment') !== -1,
+      body: { data: equipment, total: equipment.length, page: 1, pageSize: 20 },
     },
   ];
 }
@@ -100,12 +105,39 @@ export function makeTask(overrides) {
       time_status: 'ok',
       is_archived: false,
       is_recurring: true,
+      equipment_id: null,
+      equipment_name: null,
+      equipment_slug: null,
       status: 'ok',
       status_rank: 3,
       urgency: 0.5975,
       created_at: '2026-01-01T00:00:00.000Z',
       updated_at: '2026-01-01T00:00:00.000Z',
       consumables: [],
+    },
+    overrides || {},
+  );
+}
+
+/** Build a full EquipmentDTO with sane defaults. */
+export function makeEquipment(overrides) {
+  return Object.assign(
+    {
+      id: 1,
+      slug: 'port-engine',
+      name: 'Port engine',
+      description: null,
+      brand: null,
+      model: null,
+      serial_number: null,
+      purchase_date: null,
+      purchase_price: null,
+      warranty_until: null,
+      tags: [],
+      task_count: 0,
+      log_count: 0,
+      created_at: '2026-01-01T00:00:00.000Z',
+      updated_at: '2026-01-01T00:00:00.000Z',
     },
     overrides || {},
   );
