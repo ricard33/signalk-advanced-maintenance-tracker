@@ -849,7 +849,7 @@ describe('task list query (§8.1)', () => {
     service.createTask({ name: 'Unknown paperwork' });
   }
 
-  it('default sort is urgency order', () => {
+  it('default sort is status band then soonest-due first', () => {
     const { service } = makeService({ 'propulsion.port.runTime': 150 });
     seed(service);
     const page = service.listTasks({});
@@ -860,6 +860,36 @@ describe('task list query (§8.1)', () => {
       'ok',
     ]);
     expect(page.total).toBe(4);
+  });
+
+  it('within a status band, orders by remaining time ascending — stably', () => {
+    const { service } = makeService();
+    // Three tasks all "ok" (each due well beyond its lead window), with
+    // different next-due dates. Interval lengths differ so the fraction-based
+    // urgency would drift at different rates between requests.
+    service.createTask({
+      name: 'Due last',
+      time_interval: 5,
+      time_interval_unit: 'years',
+      last_maintenance: '2026-01-01T00:00:00Z',
+    });
+    service.createTask({
+      name: 'Due first',
+      time_interval: 3,
+      time_interval_unit: 'months',
+      last_maintenance: '2026-06-01T00:00:00Z',
+    });
+    service.createTask({
+      name: 'Due middle',
+      time_interval: 1,
+      time_interval_unit: 'years',
+      last_maintenance: '2026-03-01T00:00:00Z',
+    });
+
+    const names = () => service.listTasks({}).data.map((t) => t.name);
+    expect(names()).toEqual(['Due first', 'Due middle', 'Due last']);
+    // identical on a repeat call (no fraction drift reshuffling near-equal rows)
+    expect(names()).toEqual(names());
   });
 
   it('filters by search across name, description, and tags', () => {

@@ -527,11 +527,15 @@ drives the attribute.
   write actions (`edit` / `delete` / `complete`) and the "New Task" / "New Todo"
   buttons are rendered only when logged in (§7.7). Logged-out visitors see the
   data and the `view` action.
-- Default sort: overdue first, then due_soon, then upcoming — driven by the
-  server's `status_rank` + remaining sort. Every sort is a **total order**: ties
-  on the chosen key are broken by name, then by the task's immutable id
-  (creation order), so the sequence — and the page boundaries — never shift
-  between two otherwise-identical requests (the frontend re-polls every 5 s).
+- Default sort: `status_rank` band (overdue → due_soon → todo → ok → pending →
+  archived), then **soonest-due first** within the band (`remaining_time_ms`
+  ascending, nulls last), then least runtime headroom. Every sort is a **total
+  order**: remaining ties are broken by name, then by the task's immutable id
+  (creation order). The tiebreak quantities don't drift as `now` advances
+  (every task's `remaining_*` shifts by the same wall-clock amount), so the
+  sequence — and the page boundaries — never shift between the frontend's 5 s
+  polls. (An earlier build sorted the band by the fraction-based `urgency`,
+  which drifts at a per-task rate and made near-equal rows swap on refresh.)
 - Controls: freeform search box; tag filter (single-select chips); status filter
   (the same chips, trailing the tags — deliberately uncolored, since they are
   filter controls rather than a task's own badge); column-header sorting (name,
@@ -793,7 +797,7 @@ assume authorization has already passed and never re-check it (§9).
 
 | Method | Path           | Description                                                                                                                                                                                                                                                                                     |
 | ------ | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/tasks`       | List tasks (paginated). Query: `search`, `tags` (csv), `equipment` (slug), `status` (csv of overdue/due_soon/todo/ok/pending/archived), `sort` (name\|remaining_runtime\|remaining_time\|status), `order` (asc\|desc), `page`, `pageSize`. Each item includes stored + computed fields (§6.2/6.3) plus `equipment_id`/`equipment_name`/`equipment_slug`. Default sort = status urgency. |
+| GET    | `/tasks`       | List tasks (paginated). Query: `search`, `tags` (csv), `equipment` (slug), `status` (csv of overdue/due_soon/todo/ok/pending/archived), `sort` (name\|remaining_runtime\|remaining_time\|status), `order` (asc\|desc), `page`, `pageSize`. Each item includes stored + computed fields (§6.2/6.3) plus `equipment_id`/`equipment_name`/`equipment_slug`. Default sort = status band then soonest-due (§7.4). |
 | POST   | `/tasks`       | Create. Body below (accepts `equipment_id`). Server generates slug.                                                                                                                                                                                                                              |
 | GET    | `/tasks/:slug` | Task detail incl. computed fields, tags, equipment, and recent log entries (or a link + `GET /tasks/:slug/logs`).                                                                                                                                                                               |
 | PUT    | `/tasks/:slug` | Update editable fields (name, description, intervals, runtime_path, tags, `equipment_id`, consumables, seed last_* on tasks with no logs). May also change `slug` (normalized + uniqueness-checked; triggers notification-path migration, §6.4).                                                  |

@@ -240,6 +240,19 @@ export class MaintenanceService {
       if (b == null) return -1;
       return dir * (a - b);
     };
+    // Ascending, nulls last, NOT scaled by `dir` — the within-band tiebreak of
+    // the default sort. The gap between two tasks' `remaining_*` values is
+    // constant as `now` advances (both drift by the same wall-clock amount),
+    // so this order is stable between the frontend's 5 s polls — unlike the
+    // fraction-based `urgency`, which drifts at a per-task rate (short
+    // intervals gain fraction faster) and made near-equal rows swap on every
+    // refresh.
+    const byRemainingAsc = (a: number | null, b: number | null) => {
+      if (a == null && b == null) return 0;
+      if (a == null) return 1;
+      if (b == null) return -1;
+      return a - b;
+    };
 
     switch (q.sort) {
       case 'name':
@@ -263,10 +276,15 @@ export class MaintenanceService {
         break;
       case 'status':
       default:
-        // default sort: most urgent first — status rank, then highest fraction
+        // Default sort (§7.4): status band first (overdue → … → archived),
+        // then soonest-due first within the band, then least runtime headroom,
+        // then name, then id. This keeps the "Time left" column monotonic
+        // within each band and the whole order identical between requests.
         items.sort(
           (a, b) =>
-            dir * (a.status_rank - b.status_rank || b.urgency - a.urgency) ||
+            dir * (a.status_rank - b.status_rank) ||
+            byRemainingAsc(a.remaining_time_ms, b.remaining_time_ms) ||
+            byRemainingAsc(a.remaining_runtime, b.remaining_runtime) ||
             byName(a, b) ||
             byId(a, b),
         );

@@ -25,9 +25,12 @@ Equipment tracking, plus tags on log entries.
 
 ## Smaller changes and fixes
 
-- The task list now has a stable, total sort order: entries with the same sort
-  key and name are broken by creation order, so the list no longer reshuffles
-  between the 5-second polls (visible with many same-named tasks).
+- The task list order no longer fluctuates between the 5-second polls, and the
+  default order is more predictable: within each status band, tasks now sort by
+  soonest-due first (the "Time left" column reads in order), then by runtime
+  headroom, then name, then creation order. Previously the band was ordered by
+  an internal "urgency" fraction that drifts as the clock advances, so
+  near-equal rows swapped on every refresh.
 
 ## Migration notes
 
