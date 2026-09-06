@@ -119,11 +119,18 @@ export class MaintenanceService {
     tags: string[],
     consumables: ConsumableRow[],
     equipment: EquipmentRef,
+    // needed to ensure remaining dates have same base
+    now: Date | null = null,
   ): TaskDTO {
     const current = row.runtime_path
       ? this.deps.getRuntime(row.runtime_path)
       : null;
-    const computed = computeTask(row, current, this.now(), this.deps.config);
+    const computed = computeTask(
+      row,
+      current,
+      now ?? this.now(),
+      this.deps.config,
+    );
     return {
       id: row.id,
       slug: row.slug,
@@ -177,6 +184,7 @@ export class MaintenanceService {
     const tagsByTask = this.tags.tagsByTask();
     const consumablesByTask = this.consumables.byTask();
     const equipmentById = this.equipment.byId();
+    const now = this.now();
     let items = this.tasks
       .listAll()
       .map((row) =>
@@ -185,6 +193,7 @@ export class MaintenanceService {
           tagsByTask.get(row.id) ?? [],
           consumablesByTask.get(row.id) ?? [],
           this.equipmentRef(row.equipment_id, equipmentById),
+          now,
         ),
       );
 
@@ -300,6 +309,7 @@ export class MaintenanceService {
     const tagsByTask = this.tags.tagsByTask();
     const consumablesByTask = this.consumables.byTask();
     const equipmentById = this.equipment.byId();
+    const now = this.now();
     return this.tasks
       .listAll()
       .map((row) =>
@@ -308,6 +318,7 @@ export class MaintenanceService {
           tagsByTask.get(row.id) ?? [],
           consumablesByTask.get(row.id) ?? [],
           this.equipmentRef(row.equipment_id, equipmentById),
+          now,
         ),
       );
   }
