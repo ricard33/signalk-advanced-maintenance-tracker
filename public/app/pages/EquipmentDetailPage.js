@@ -10,6 +10,7 @@ import {
   useTasks,
   useLogs,
   deleteEquipment,
+  deleteLog,
 } from '../api/hooks.js';
 import { useAuth } from '../auth/auth.js';
 import {
@@ -24,6 +25,7 @@ import { StatTable } from '../components/StatTable.js';
 import { StatusBadge } from '../components/StatusBadge.js';
 import { MarkdownView } from '../components/MarkdownView.js';
 import { EquipmentFormModal } from '../components/EquipmentFormModal.js';
+import { LogEntryModal } from '../components/LogEntryModal.js';
 import { ConfirmModal } from '../components/ConfirmModal.js';
 
 /** @typedef {import('../types.js').EquipmentDTO} EquipmentDTO */
@@ -39,6 +41,12 @@ export function EquipmentDetailPage(props) {
 
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editingEntry, setEditingEntry] = useState(
+    /** @type {LogDTO|null} */ (null),
+  );
+  const [deletingEntry, setDeletingEntry] = useState(
+    /** @type {LogDTO|null} */ (null),
+  );
 
   const eq = eqRes.data;
   if (eqRes.error && !eq) {
@@ -104,6 +112,33 @@ export function EquipmentDetailPage(props) {
       render: (/** @type {LogDTO} */ e) => formatHours(e.runtime_hours),
     },
   ];
+  if (auth.isLoggedIn) {
+    logColumns.push({
+      key: 'actions',
+      label: '',
+      className: 'actions',
+      render: (/** @type {LogDTO} */ e) => html`
+        <button
+          type="button"
+          class="btn-icon primary"
+          aria-label="Edit log entry"
+          title="Edit"
+          onClick=${() => setEditingEntry(e)}
+        >
+          <i class="bi bi-pencil" />
+        </button>
+        <button
+          type="button"
+          class="btn-icon danger"
+          aria-label="Delete log entry"
+          title="Delete"
+          onClick=${() => setDeletingEntry(e)}
+        >
+          <i class="bi bi-trash" />
+        </button>
+      `,
+    });
+  }
 
   return html`
     <div>
@@ -205,9 +240,47 @@ export function EquipmentDetailPage(props) {
       <${Table}
         columns=${logColumns}
         rows=${logs}
+        renderDetail=${(/** @type {LogDTO} */ e) =>
+          e.notes
+            ? html`<div class="log-notes">
+                <div class="log-notes-body">
+                  <${MarkdownView} markdown=${e.notes} />
+                </div>
+              </div>`
+            : null}
         loading=${logsRes.loading}
         emptyMessage="No log entries linked to this equipment."
       />
+
+      ${
+        editingEntry
+          ? html`<${LogEntryModal}
+              entry=${editingEntry}
+              onClose=${() => setEditingEntry(null)}
+            />`
+          : null
+      }
+      ${
+        deletingEntry
+          ? html`<${ConfirmModal}
+              title="Delete log entry"
+              message=${
+                deletingEntry.task_id !== null
+                  ? "Delete this log entry? The task's last-maintenance data will be recomputed."
+                  : 'Delete this log entry? This cannot be undone.'
+              }
+              onConfirm=${async () => {
+                await deleteLog(
+                  deletingEntry.id,
+                  deletingEntry.task_slug || undefined,
+                );
+                toast('Log entry deleted.', 'success');
+                setDeletingEntry(null);
+              }}
+              onClose=${() => setDeletingEntry(null)}
+            />`
+          : null
+      }
 
       ${
         editing

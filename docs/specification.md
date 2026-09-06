@@ -595,9 +595,10 @@ drives the attribute.
 
 - Shows name + tags, a details card (description markdown, brand, model, serial
   number, purchase date/price, warranty), a table of the tasks linked to this
-  equipment, and a table of the log entries linked to it.
-- Logged in: Edit / Delete buttons. Deleting warns how many tasks / log entries
-  will be unlinked (their history is kept — §5.9).
+  equipment, and a table of the log entries linked to it (with a notes row and,
+  logged in, per-entry edit/delete icons — same as the master log).
+- Logged in: Edit / Delete buttons for the equipment itself. Deleting warns how
+  many tasks / log entries will be unlinked (their history is kept — §5.9).
 
 ### 7.5 Modals
 

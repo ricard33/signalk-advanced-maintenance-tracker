@@ -6,6 +6,29 @@ import { authState } from '../../public/app/auth/auth.js';
 import { route, parseHash } from '../../public/app/lib/router.js';
 import { mockFetch, makeEquipment, makeTask } from './helpers.js';
 
+/** A task-linked log entry sitting on the equipment. */
+function logEntry(overrides) {
+  return Object.assign(
+    {
+      id: 9,
+      task_id: 1,
+      title: null,
+      maintenance_date: '2026-05-01T00:00:00.000Z',
+      runtime_hours: 1200,
+      notes: null,
+      logged_by: 'admin',
+      created_at: '2026-05-01T00:00:00.000Z',
+      task_slug: 'oil-change',
+      task_name: 'Oil change',
+      tags: [],
+      equipment_id: 1,
+      equipment_slug: 'port-engine',
+      equipment_name: 'Port engine',
+    },
+    overrides || {},
+  );
+}
+
 function routes(eq, tasks, logs) {
   return [
     {
@@ -110,5 +133,57 @@ describe('EquipmentDetailPage (§7.4)', () => {
       expect(call).toBeTruthy();
     });
     await waitFor(() => expect(location.hash).toBe('#/equipment'));
+  });
+
+  it('logged out: log rows have no edit/delete buttons', async () => {
+    mockFetch(routes(makeEquipment({ name: 'Port engine' }), [], [logEntry()]));
+    authState.value = { checked: true, isLoggedIn: false, username: null };
+    render(html`<${EquipmentDetailPage} slug="port-engine" />`);
+    await waitFor(() =>
+      expect(screen.getByText('Log entries (1)')).toBeTruthy(),
+    );
+    expect(screen.queryByLabelText('Edit log entry')).toBeNull();
+    expect(screen.queryByLabelText('Delete log entry')).toBeNull();
+  });
+
+  it('logged in: opens the edit modal for a log entry', async () => {
+    mockFetch(routes(makeEquipment({ name: 'Port engine' }), [], [logEntry()]));
+    authState.value = { checked: true, isLoggedIn: true, username: 'admin' };
+    render(html`<${EquipmentDetailPage} slug="port-engine" />`);
+    await waitFor(() =>
+      expect(screen.getByLabelText('Edit log entry')).toBeTruthy(),
+    );
+    fireEvent.click(screen.getByLabelText('Edit log entry'));
+    expect(document.getElementById('log-form')).toBeTruthy();
+  });
+
+  it('logged in: deletes a log entry via the confirm modal', async () => {
+    const fn = mockFetch([
+      ...routes(makeEquipment({ name: 'Port engine' }), [], [logEntry()]),
+      {
+        match: (m, u) => m === 'DELETE' && u.indexOf('/api/logs/9') !== -1,
+        status: 204,
+      },
+    ]);
+    authState.value = { checked: true, isLoggedIn: true, username: 'admin' };
+    render(html`<${EquipmentDetailPage} slug="port-engine" />`);
+    await waitFor(() =>
+      expect(screen.getByLabelText('Delete log entry')).toBeTruthy(),
+    );
+    fireEvent.click(screen.getByLabelText('Delete log entry'));
+    await waitFor(() =>
+      expect(screen.getByText('Delete log entry')).toBeTruthy(),
+    );
+    const deletes = screen.getAllByRole('button', { name: 'Delete' });
+    fireEvent.click(deletes[deletes.length - 1]);
+    await waitFor(() => {
+      const call = fn.mock.calls.find(
+        (c) =>
+          c[1] &&
+          c[1].method === 'DELETE' &&
+          String(c[0]).indexOf('/api/logs/9') !== -1,
+      );
+      expect(call).toBeTruthy();
+    });
   });
 });
