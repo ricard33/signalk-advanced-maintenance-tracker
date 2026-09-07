@@ -580,11 +580,11 @@ drives the attribute.
   the tag chips, omitted when no equipment exists) sits above the tag row.
 - On a narrow screen (≤ 640 px) the filter rows collapse behind a **Filters
   (n)** button (n = active filter count); the active filters stay visible below
-  it as removable chips with a "Clear all". Expanded, each row is a single
-  horizontally-scrolling line so a long equipment/tag list can't push the table
-  off-screen. Above 640 px the rows are always shown and the toggle is hidden.
-  jsdom has no `matchMedia`, so under test the bar mounts expanded and the row
-  structure is unchanged.
+  it as removable chips with a "Clear all". So by default a long
+  equipment/tag list can't push the table off-screen; expanding the rows (they
+  wrap over as many lines as needed) is an explicit tap. Above 640 px the rows
+  are always shown and the toggle is hidden. jsdom has no `matchMedia`, so under
+  test the bar mounts expanded and the row structure is unchanged.
 - Live-updating via the data layer's polling (default 5 s, configurable — §7.6).
 
 **Task Detail (`/tasks/:slug`)**
@@ -800,8 +800,8 @@ _broken_.
 header onto two rows — title + theme toggle, then the nav full-width (horizontally
 scrolling if it can't fit) — instead of letting the single-row grid overflow the
 viewport. The task/equipment filter rows collapse behind a _Filters (n)_ button
-(§7.4); once opened, each row scrolls horizontally rather than wrapping to many
-lines. The `FilterBar` open/closed default is read from `window.matchMedia`
+(§7.4); once opened, the chip rows wrap over as many lines as they need. The
+`FilterBar` open/closed default is read from `window.matchMedia`
 (guarded — absent on Chromium 69 and under jsdom, where it falls back to open).
 
 **Verification.** Because there is no build to catch this, compatibility is a review
