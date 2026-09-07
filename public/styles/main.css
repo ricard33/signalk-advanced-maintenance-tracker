@@ -877,6 +877,111 @@ pre {
   color: var(--text-muted);
 }
 
+/* ---- dashboard (home) ---- */
+
+.dash-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 12px;
+  margin-bottom: 16px;
+}
+@media (max-width: 560px) {
+  .dash-tiles {
+    grid-template-columns: 1fr;
+  }
+}
+.dash-tile {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  color: var(--text);
+}
+.dash-tile:hover {
+  text-decoration: none;
+  border-color: var(--accent);
+}
+.dash-num {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.dash-label {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+.dash-tile.overdue .dash-num {
+  color: var(--danger);
+}
+.dash-tile.due_soon .dash-num {
+  color: var(--warn);
+}
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-gap: 16px;
+}
+@media (min-width: 720px) {
+  .dash-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.dash-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.dash-list li {
+  border-top: 1px solid var(--border);
+}
+.dash-list li:first-child {
+  border-top: none;
+}
+.dash-list li a,
+.dash-list li .dash-row-static {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  color: var(--text);
+}
+.dash-list li a:hover {
+  text-decoration: none;
+  color: var(--accent);
+}
+.dash-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.dash-item-main .badge {
+  flex: none;
+}
+.dash-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* the trailing value (date / time left) never shrinks or wraps */
+.dash-list li a > :last-child,
+.dash-list li .dash-row-static > :last-child {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.dash-empty {
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+
 /* label/value readout in the schedule + runtime cards */
 .stat-table {
   width: 100%;

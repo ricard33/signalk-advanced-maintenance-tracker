@@ -473,7 +473,8 @@ as authored (no build output).
 - **Hash-based routing** (confirmed choice) so deep links and page refreshes work
   under the plugin mount without any server-side SPA fallback — everything after
   the `#` is client-side only and never hits the server (e.g.
-  `/signalk-maintenance-tracker/#/tasks/oil-change`). SignalK serves the app at
+  `/signalk-maintenance-tracker/#/tasks/oil-change`). `#/` is the dashboard
+  (§7.4), `#/tasks` the task list. SignalK serves the app at
   both `/signalk-maintenance-tracker/` and `/signalk-maintenance-tracker/index.html`,
   which is all a hash router requires. Implemented with `preact-router` in hash mode
   (or a small hand-rolled `hashchange` router). History/path-based routing would
@@ -498,9 +499,10 @@ signals** imported where needed:
 - **modals** — rendered declaratively from component state (no global modal
   provider); a shared `<Modal/>` primitive handles the overlay/focus-trap.
 
-The shell header contains: app title, nav links (Tasks / Log), a global search box,
-the theme toggle, and an **auth control** (`AuthControl`) — a "Log in" link when
-anonymous, or the username + "Log out" when authenticated.
+The shell header contains: app title (links to the dashboard), nav links
+(Home / Tasks / Equipment / Log), the theme toggle, and — in the footer — an
+**auth control** (`AuthControl`): a "Log in" link when anonymous, or the
+username + "Log out" when authenticated.
 
 ### 7.3 Theme (light/dark)
 
@@ -520,7 +522,22 @@ drives the attribute.
 
 ### 7.4 Pages
 
-**Task List (`/`)** — the main page.
+**Dashboard (`/`)** — the landing page; a boat-state recap.
+
+- Three clickable count tiles: **# overdue tasks** (→ `/tasks?status=overdue`),
+  **# due-soon tasks** (→ `/tasks?status=due_soon`), **# equipment** (→
+  `/equipment`). The overdue / due-soon numbers take the `--danger` / `--warn`
+  colour only when non-zero.
+- **Next up** — the next few tasks to do: up to 3 tasks in `overdue` or
+  `due_soon` status (overdue first), each a link to its detail page with its
+  status badge and time left. "Nothing due right now." when there are none.
+- **Recent log** — the 3 most recent log entries; task-linked entries link to
+  the task, standalone entries render as plain text (as in the master log).
+- Composes existing list endpoints (`GET /tasks?status=…`, `GET /equipment`,
+  `GET /logs` with `pageSize`), no dedicated endpoint; live-updating via the 5 s
+  polling.
+
+**Task List (`/tasks`)** — the full task table.
 
 - Hand-rolled `<Table/>` component, columns: status badge, name, tags, remaining
   runtime, remaining time, next due date, action icons. `view` is always shown; the

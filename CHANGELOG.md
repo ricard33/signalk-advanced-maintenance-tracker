@@ -1,9 +1,13 @@
 # v1.6.0
 
-Equipment tracking, plus tags on log entries.
+Equipment tracking, a home dashboard, plus tags on log entries.
 
 ## Highlights
 
+- **Home dashboard.** The app now opens on a recap page: clickable count tiles
+  for overdue tasks, due-soon tasks, and equipment (each linking to the
+  matching list), the next few tasks to do (overdue and due-soon), and the
+  latest log entries. The full task list moved to `/tasks`.
 - **Equipment.** A new top-level entity for the boat's components — engines,
   hull, mast, instruments, safety gear. Each has a name, description, and
   optional brand / model / serial number / purchase date / purchase price /

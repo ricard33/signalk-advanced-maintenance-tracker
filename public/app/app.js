@@ -9,6 +9,7 @@ import { Toaster } from './components/Toaster.js';
 import { ThemeToggle } from './components/ThemeToggle.js';
 import { AuthControl } from './components/AuthControl.js';
 import { LoginModal } from './components/LoginModal.js';
+import { DashboardPage } from './pages/DashboardPage.js';
 import { TaskListPage } from './pages/TaskListPage.js';
 import { TaskDetailPage } from './pages/TaskDetailPage.js';
 import { MasterLogPage } from './pages/MasterLogPage.js';
@@ -20,6 +21,7 @@ export function App() {
   const detailParams = matchPath('/tasks/:slug', current.path);
   const equipmentDetail = matchPath('/equipment/:slug', current.path);
   const onEquipment = current.path === '/equipment' || !!equipmentDetail;
+  const onTasks = current.path === '/tasks' || !!detailParams;
   const health = useHealth();
   const version = health.data && health.data.version;
 
@@ -38,8 +40,10 @@ export function App() {
     page = html`<${EquipmentListPage} />`;
   } else if (current.path === '/log') {
     page = html`<${MasterLogPage} />`;
-  } else {
+  } else if (current.path === '/tasks') {
     page = html`<${TaskListPage} />`;
+  } else {
+    page = html`<${DashboardPage} />`;
   }
 
   return html`
@@ -48,8 +52,13 @@ export function App() {
         <a class="shell-title" href="#/">Maintenance Tracker</a>
         <nav class="shell-nav">
           <a
-            class=${'nav-link' + (!detailParams && !onEquipment && current.path !== '/log' ? ' active' : '')}
+            class=${'nav-link' + (current.path === '/' ? ' active' : '')}
             href="#/"
+            >Home</a
+          >
+          <a
+            class=${'nav-link' + (onTasks ? ' active' : '')}
+            href="#/tasks"
             >Tasks</a
           >
           <a
