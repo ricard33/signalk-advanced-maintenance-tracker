@@ -78,10 +78,10 @@ export function App() {
       <footer class="shell-footer">
         <div class="shell-footer-links">
           <a
-            href="https://www.npmjs.com/package/signalk-maintenance-tracker"
+            href="https://www.npmjs.com/package/signalk-advanced-maintenance-tracker"
             target="_blank"
             rel="noopener"
-            >signalk-maintenance-tracker</a
+            >signalk-advanced-maintenance-tracker</a
           >
           ${version && html`<span class="dot-spacer">·</span><span>v${version}</span>`}
         </div>

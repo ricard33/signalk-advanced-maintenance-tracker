@@ -2,7 +2,7 @@ import { vi } from 'vitest';
 
 /**
  * Install a fetch mock that answers by first matching "METHOD pathprefix"
- * route key (e.g. 'GET /plugins/signalk-maintenance-tracker/api/tasks').
+ * route key (e.g. 'GET /plugins/signalk-advanced-maintenance-tracker/api/tasks').
  * Returns the vi.fn so calls can be asserted.
  *
  * @param {Array<{match: (method: string, url: string) => boolean, status?: number, body?: any}>} routes

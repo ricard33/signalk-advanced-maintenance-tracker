@@ -1,6 +1,6 @@
 {
   "name": "signalk-advanced-maintenance-tracker",
-  "version": "1.6.1",
+  "version": "1.6.4",
   "description": "Track recurring boat maintenance tasks with runtime and calendar based intervals.",
   "main": "dist/index.js",
   "license": "MIT",
@@ -10,7 +10,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ricard33/signalk-maintenance-tracker.git"
+    "url": "git+https://github.com/ricard33/signalk-advanced-maintenance-tracker.git"
   },
   "keywords": [
     "signalk-node-server-plugin",

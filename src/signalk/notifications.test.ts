@@ -52,12 +52,16 @@ function makeTask(overrides: Partial<TaskDTO>): TaskDTO {
 
 function makeManager(enabled = true) {
   const app = { handleMessage: vi.fn() };
-  const manager = new NotificationManager(app, 'signalk-maintenance-tracker', {
-    enableNotifications: enabled,
-    alarmStateOk: 'none',
-    alarmStateDueSoon: 'warn',
-    alarmStateOverdue: 'alarm',
-  });
+  const manager = new NotificationManager(
+    app,
+    'signalk-advanced-maintenance-tracker',
+    {
+      enableNotifications: enabled,
+      alarmStateOk: 'none',
+      alarmStateDueSoon: 'warn',
+      alarmStateOverdue: 'alarm',
+    },
+  );
   return { app, manager };
 }
 

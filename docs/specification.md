@@ -1,4 +1,4 @@
-# signalk-maintenance-tracker — Implementation Specification
+# signalk-advanced-maintenance-tracker — Implementation Specification
 
 Status: draft v1
 Supersedes the high-level [initial-spec.md](initial-spec.md) with concrete implementation detail.
@@ -49,7 +49,7 @@ progressively enhancing on modern browsers (§7.9).
 │ Browser (Preact SPA, buildless ES modules, served from /public) │
 │   signals data layer ──REST (poll)──►                           │
 └───────────────┬─────────────────────────────────────────────────┘
-                │  HTTP  /plugins/signalk-maintenance-tracker/api/*
+                │  HTTP  /plugins/signalk-advanced-maintenance-tracker/api/*
                 ▼
 ┌───────────────────────────────────────────────────────────────┐
 │ Plugin backend (Node, in SignalK server process)               │
@@ -129,7 +129,7 @@ important for an offline vessel network.
 ## 4. Repository layout
 
 ```
-signalk-maintenance-tracker/
+signalk-advanced-maintenance-tracker/
 ├── package.json              # plugin manifest (backend deps + build scripts)
 ├── tsconfig.json             # backend TS config → dist/
 ├── src/                      # backend TypeScript source
@@ -463,7 +463,7 @@ stops resolving after a rename; this is acceptable in v1.
 ### 7.1 Serving & routing
 
 The SPA is served by SignalK at `/{pluginId}/` (i.e.
-`/signalk-maintenance-tracker/`) because `package.json` includes the
+`/signalk-advanced-maintenance-tracker/`) because `package.json` includes the
 `signalk-webapp` keyword and a `public/` directory. The files are served exactly
 as authored (no build output).
 
@@ -473,14 +473,14 @@ as authored (no build output).
 - **Hash-based routing** (confirmed choice) so deep links and page refreshes work
   under the plugin mount without any server-side SPA fallback — everything after
   the `#` is client-side only and never hits the server (e.g.
-  `/signalk-maintenance-tracker/#/tasks/oil-change`). `#/` is the dashboard
+  `/signalk-advanced-maintenance-tracker/#/tasks/oil-change`). `#/` is the dashboard
   (§7.4), `#/tasks` the task list. SignalK serves the app at
-  both `/signalk-maintenance-tracker/` and `/signalk-maintenance-tracker/index.html`,
+  both `/signalk-advanced-maintenance-tracker/` and `/signalk-advanced-maintenance-tracker/index.html`,
   which is all a hash router requires. Implemented with `preact-router` in hash mode
   (or a small hand-rolled `hashchange` router). History/path-based routing would
   need the static handler to fall back to `index.html` for unknown deep paths; not
   relied on.
-- API base URL: `/plugins/signalk-maintenance-tracker/api` (absolute path; the
+- API base URL: `/plugins/signalk-advanced-maintenance-tracker/api` (absolute path; the
   webapp and API share an origin). Because they are same-origin, the SignalK
   session cookie set at login is sent automatically with every API request
   (fetch `credentials: 'same-origin'`); no manual token handling is required for
@@ -798,7 +798,7 @@ detail, and the complete-task flow.
 ## 8. REST API
 
 Base path (mounted by `registerWithRouter`):
-`/plugins/signalk-maintenance-tracker/api`
+`/plugins/signalk-advanced-maintenance-tracker/api`
 
 All responses are JSON. Errors use `{ "error": { "code": string, "message":
 string } }` with appropriate HTTP status codes. List endpoints return
@@ -1059,7 +1059,7 @@ Standard SignalK plugin shape:
 ```ts
 module.exports = function (app) {
   const plugin = {
-    id: 'signalk-maintenance-tracker',
+    id: 'signalk-advanced-maintenance-tracker',
     name: 'Maintenance Tracker',
     description: 'Track recurring boat maintenance tasks.',
     schema,                    // §10.4
@@ -1179,7 +1179,7 @@ These were open during drafting and are now settled:
   "due_soon" (as stored) both hit; two characters is enough to mean what you
   mean. Expected scale is < ~200 records, so no FTS5 needed. (§5.4, §6.3)
 - **Deep-link routing:** **hash-based routing** (confirmed). The app is served at
-  both `/signalk-maintenance-tracker/` and `…/index.html`; a hash router needs no
+  both `/signalk-advanced-maintenance-tracker/` and `…/index.html`; a hash router needs no
   server-side SPA fallback. (§7.1)
 - **Access control:** owned entirely by SignalK — the plugin builds no authz.
   Today all plugin routes are admin-only; a future SignalK release adds per-route
@@ -1198,7 +1198,7 @@ These were open during drafting and are now settled:
 
 ```jsonc
 {
-  "name": "signalk-maintenance-tracker",
+  "name": "signalk-advanced-maintenance-tracker",
   "version": "0.1.0",
   "main": "dist/index.js",
   "keywords": ["signalk-node-server-plugin", "signalk-webapp"],
@@ -1234,7 +1234,7 @@ These were open during drafting and are now settled:
   linked into a running SignalK server and let SignalK serve `public/` directly —
   edit a `.js`/`.css` file and reload the browser (no HMR, no bundler). For iterating
   away from a server, any static file server pointed at `public/` works, fronted by a
-  small dev proxy that forwards `/plugins/signalk-maintenance-tracker/api` and
+  small dev proxy that forwards `/plugins/signalk-advanced-maintenance-tracker/api` and
   `/signalk` to the live SignalK server. `npm --prefix frontend run typecheck`
   (tsc `--noEmit`, `checkJs`) type-checks the JSDoc-annotated modules.
 

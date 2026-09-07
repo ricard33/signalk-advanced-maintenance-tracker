@@ -69,7 +69,7 @@ curated CHANGELOG.md section is what users see before installing.
 No `NPM_TOKEN` is stored. Instead, configure the package on npmjs.com once:
 
 - npm package **Settings → Trusted Publisher → GitHub Actions**
-- Repository: `hoeken/signalk-maintenance-tracker`
+- Repository: `ricard33/signalk-advanced-maintenance-tracker`
 - Workflow filename: `publish.yml`
 
 ### Cutting a release
@@ -107,9 +107,9 @@ No `NPM_TOKEN` is stored. Instead, configure the package on npmjs.com once:
 
 5. **Verify:**
 
-   - [GitHub Actions](https://github.com/hoeken/signalk-maintenance-tracker/actions) — the "Publish to npm" run is green
-   - [GitHub Releases](https://github.com/hoeken/signalk-maintenance-tracker/releases) — the release shows your CHANGELOG notes
-   - [npm](https://www.npmjs.com/package/signalk-maintenance-tracker) — the new version is live
+   - [GitHub Actions](https://github.com/ricard33/signalk-advanced-maintenance-tracker/actions) — the "Publish to npm" run is green
+   - [GitHub Releases](https://github.com/ricard33/signalk-advanced-maintenance-tracker/releases) — the release shows your CHANGELOG notes
+   - [npm](https://www.npmjs.com/package/signalk-advanced-maintenance-tracker) — the new version is live
 
 Pre-release tags (`v1.1.0-beta.1`, `-alpha`, `-rc`) are marked as pre-releases
 on GitHub and published under the matching npm dist-tag.

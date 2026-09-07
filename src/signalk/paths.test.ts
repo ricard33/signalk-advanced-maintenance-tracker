@@ -17,6 +17,12 @@ function makeTask(overrides: Partial<TaskDTO>): TaskDTO {
     time_warning_days: null,
     last_maintenance: null,
     last_runtime: null,
+    is_recurring: false,
+    is_archived: false,
+    equipment_id: null,
+    equipment_name: null,
+    equipment_slug: null,
+    consumables: [],
     created_at: '',
     updated_at: '',
     current_runtime: null,
@@ -46,9 +52,13 @@ function makeTask(overrides: Partial<TaskDTO>): TaskDTO {
 
 function makeManager(enabled = true) {
   const app = { handleMessage: vi.fn() };
-  const manager = new PathPublisher(app, 'signalk-maintenance-tracker', {
-    enablePublishPaths: enabled,
-  });
+  const manager = new PathPublisher(
+    app,
+    'signalk-advanced-maintenance-tracker',
+    {
+      enablePublishPaths: enabled,
+    },
+  );
   return { app, manager };
 }
 

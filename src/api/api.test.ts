@@ -35,7 +35,7 @@ function makeApp(runtimeValues: Record<string, number> = {}) {
     next();
   });
   mountApi(router, () => servicesRef);
-  app.use('/plugins/signalk-maintenance-tracker', router);
+  app.use('/plugins/signalk-advanced-maintenance-tracker', router);
   return service;
 }
 
@@ -65,15 +65,18 @@ function makeAppWithStowage(stowageClient: StowageClient) {
     next();
   });
   mountApi(router, () => services);
-  stowageAppInstance.use('/plugins/signalk-maintenance-tracker', router);
+  stowageAppInstance.use(
+    '/plugins/signalk-advanced-maintenance-tracker',
+    router,
+  );
   return {
     app: stowageAppInstance,
-    base: '/plugins/signalk-maintenance-tracker/api',
+    base: '/plugins/signalk-advanced-maintenance-tracker/api',
     service,
   };
 }
 
-const base = '/plugins/signalk-maintenance-tracker/api';
+const base = '/plugins/signalk-advanced-maintenance-tracker/api';
 
 beforeEach(() => {
   makeApp({ 'propulsion.port.runTime': 1360 });

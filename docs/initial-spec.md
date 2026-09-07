@@ -1,4 +1,4 @@
-# signalk-maintenance-tracker plugin spec
+# signalk-advanced-maintenance-tracker plugin spec
 
 This is a plugin for SignalK to manage tracking maintenance tasks for the boat. The primary interface should be a webapp. Through the webapp, the user can create various maintenance tasks, mark the tasks as completed, view maintenance logs, and view overdue and upcoming maintenance tasks.
 

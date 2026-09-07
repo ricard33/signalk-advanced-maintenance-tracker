@@ -1,3 +1,36 @@
+# v1.6.4
+
+Published under a new name — **Advanced Maintenance Tracker** — with a couple of
+follow-up fixes.
+
+## Highlights
+
+- **New name and package.** The plugin is now `signalk-advanced-maintenance-tracker`
+  and appears in the SignalK plugin list as "Advanced Maintenance Tracker". It
+  continues Zach Hoeken's `signalk-maintenance-tracker`.
+- **Editable log entries on the equipment page.** The equipment detail page's
+  "Log entries" table gains per-entry edit and delete actions (when logged in),
+  and shows each entry's notes — matching the master log and task detail pages.
+
+## Smaller changes and fixes
+
+- Every remaining runtime / time figure on the task list is now computed against
+  a single reference time, so the values — and the row order — no longer jitter
+  between the 5-second polls (the last piece of the sort-stability work from the
+  previous release).
+- Creating a task or a standalone log entry through the REST API now inherits
+  the linked equipment's tags when the request omits `tags` (the web form
+  already pre-filled them); send `tags: []` to opt out.
+
+## Migration notes
+
+- The plugin id changed with the rename, and SignalK keys each plugin's stored
+  configuration and data directory by id — so an existing
+  `signalk-maintenance-tracker` install is **not** upgraded in place: the new
+  plugin starts with empty configuration and an empty maintenance database. Use
+  **Download Log** on the old plugin first if you want to keep a copy of your
+  history.
+
 # v1.6.0
 
 Equipment tracking, a home dashboard, plus tags on log entries.

@@ -1,4 +1,4 @@
-# signalk-maintenance-tracker
+# signalk-advanced-maintenance-tracker
 
 A [SignalK](https://signalk.org) server plugin that tracks recurring boat
 maintenance — oil changes, winch service, watermaker filters, and anything
@@ -44,7 +44,7 @@ From the SignalK Appstore (once published), or manually:
 
 ```sh
 cd ~/.signalk
-npm install signalk-maintenance-tracker
+npm install signalk-advanced-maintenance-tracker
 ```
 
 Enable the plugin in the SignalK admin UI (Server → Plugin Config →
@@ -89,7 +89,7 @@ anything.
 
 ## REST API
 
-Mounted at `/plugins/signalk-maintenance-tracker/api` (access controlled by
+Mounted at `/plugins/signalk-advanced-maintenance-tracker/api` (access controlled by
 the SignalK server — currently admin):
 
 - `GET/POST /tasks`, `GET/PUT/DELETE /tasks/:slug`
