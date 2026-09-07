@@ -585,7 +585,8 @@ describe('equipment (§5.9)', () => {
   it('deleting an equipment unlinks its tasks/logs and prunes orphan tags', async () => {
     const { service } = makeService();
     const eq = service.createEquipment({ name: 'Port engine', tags: ['Solo'] });
-    service.createTask({ name: 'Oil', equipment_id: eq.id });
+    // explicit [] so the task does not inherit the equipment's tag (§8.1)
+    service.createTask({ name: 'Oil', equipment_id: eq.id, tags: [] });
     const log = await service.addLog(
       'oil',
       { maintenance_date: '2026-07-01T00:00:00Z' },
@@ -596,10 +597,76 @@ describe('equipment (§5.9)', () => {
 
     expect(service.getTask('oil').equipment_id).toBeNull();
     expect(service.logs.get(log.id)?.equipment_id).toBeNull();
-    expect(service.listTags()).toEqual([]); // 'Solo' pruned
+    expect(service.listTags()).toEqual([]); // 'Solo' pruned — only the equipment had it
     expect(() => service.getEquipment('port-engine')).toThrowError(
       expect.objectContaining({ status: 404 }),
     );
+  });
+
+  it('createTask inherits the equipment tags when `tags` is omitted; explicit wins', () => {
+    const { service } = makeService();
+    const eq = service.createEquipment({
+      name: 'Port engine',
+      tags: ['Engines', 'Port'],
+    });
+
+    // omitted -> inherit (sorted by TagsRepo)
+    const inherited = service.createTask({ name: 'Oil', equipment_id: eq.id });
+    expect(inherited.tags).toEqual(['Engines', 'Port']);
+
+    // explicit [] -> no tags
+    const cleared = service.createTask({
+      name: 'Filter',
+      equipment_id: eq.id,
+      tags: [],
+    });
+    expect(cleared.tags).toEqual([]);
+
+    // explicit list -> taken as given, no merge with the equipment's
+    const explicit = service.createTask({
+      name: 'Belt',
+      equipment_id: eq.id,
+      tags: ['Belts'],
+    });
+    expect(explicit.tags).toEqual(['Belts']);
+
+    // no equipment -> no tags
+    expect(service.createTask({ name: 'Solo' }).tags).toEqual([]);
+
+    // the inherited tags survive deleting the equipment (the task still holds them)
+    service.deleteEquipment('port-engine');
+    expect(service.getTask('oil').tags).toEqual(['Engines', 'Port']);
+    expect(service.listTags().map((t) => t.name)).toEqual([
+      'Belts',
+      'Engines',
+      'Port',
+    ]);
+  });
+
+  it('addStandaloneLog inherits the equipment tags when `tags` is omitted', () => {
+    const { service } = makeService();
+    const eq = service.createEquipment({ name: 'Liferaft', tags: ['Safety'] });
+
+    const inherited = service.addStandaloneLog(
+      {
+        title: 'Serviced liferaft',
+        maintenance_date: '2026-07-01T00:00:00Z',
+        equipment_id: eq.id,
+      },
+      'admin',
+    );
+    expect(inherited.tags).toEqual(['Safety']);
+
+    const cleared = service.addStandaloneLog(
+      {
+        title: 'Quick note',
+        maintenance_date: '2026-07-02T00:00:00Z',
+        equipment_id: eq.id,
+        tags: [],
+      },
+      'admin',
+    );
+    expect(cleared.tags).toEqual([]);
   });
 });
 

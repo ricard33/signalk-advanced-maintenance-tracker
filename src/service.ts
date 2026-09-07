@@ -391,7 +391,8 @@ export class MaintenanceService {
       equipment_id: this.resolveEquipmentId(body.equipment_id),
     };
     const row = this.tasks.create(seed, nowIso);
-    if (body.tags) this.tags.setTaskTags(row.id, body.tags);
+    const taskTags = this.tagsForNew(body.tags, seed.equipment_id);
+    if (taskTags.length) this.tags.setTaskTags(row.id, taskTags);
     if (body.consumables)
       this.consumables.setForTask(
         row.id,
@@ -761,7 +762,8 @@ export class MaintenanceService {
         },
         this.now().toISOString(),
       );
-      if (body.tags) this.tags.setLogTags(entry.id, body.tags);
+      const logTags = this.tagsForNew(body.tags, entry.equipment_id);
+      if (logTags.length) this.tags.setLogTags(entry.id, logTags);
       this.db.exec('COMMIT');
     } catch (err) {
       this.db.exec('ROLLBACK');
@@ -1132,6 +1134,20 @@ export class MaintenanceService {
     if (!this.equipment.getById(value))
       throw new ApiError(404, 'not_found', `Equipment ${value} not found`);
     return value;
+  }
+
+  /**
+   * Tags to apply on a *create* (task or standalone log entry): an explicit
+   * list — `[]` included — is taken as given; an omitted list falls back to the
+   * linked equipment's tags (§8.1/§8.2), mirroring how a task completion
+   * inherits the task's tags.
+   */
+  private tagsForNew(
+    bodyTags: string[] | undefined,
+    equipmentId: number | null,
+  ): string[] {
+    if (bodyTags !== undefined) return bodyTags;
+    return equipmentId != null ? this.tags.tagsForEquipment(equipmentId) : [];
   }
 
   /** Trim/normalize an equipment body; name required, price non-negative,

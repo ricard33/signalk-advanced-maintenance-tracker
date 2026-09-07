@@ -835,6 +835,7 @@ explicitly. `runtime_interval` / `time_interval` are both optional (§5.1).
   "time_interval_unit": "months",
   "runtime_path": "propulsion.port.runTime",
   "tags": ["Engines", "Port Engine"],
+  "equipment_id": 3,
   "last_maintenance": "2026-01-15T10:00:00Z",
   "last_runtime": 1240.5,
   "consumables": [
@@ -842,6 +843,11 @@ explicitly. `runtime_interval` / `time_interval` are both optional (§5.1).
   ]
 }
 ```
+
+On **create**, an omitted `tags` inherits the linked equipment's tags (§5.9),
+the same way `POST /tasks/:slug/logs` inherits the task's tags (§8.2); an
+explicit list — `[]` included — is taken as given (no merge). On **update**,
+an omitted `tags` leaves the task's tags unchanged.
 
 `consumables` links this task to signalk-stowage-mgmt items it consumes on
 completion (see `docs/inventory-interaction.md`) — omit the field to leave
@@ -929,8 +935,10 @@ Master-log `search` also matches on tag name and equipment name.
 On `POST /tasks/:slug/logs`, an **omitted** `tags` and an **omitted**
 `equipment_id` both inherit the task's current values; an explicit value —
 `[]` / `null` included — is taken as given. The "Mark complete" modal pre-fills
-both as an editable starting point. `equipment_id` links the entry to a boat
-component (§5.9); an unknown id is rejected.
+both as an editable starting point. On `POST /logs` (standalone entry), an
+omitted `tags` instead inherits the tags of the entry's `equipment_id` when one
+is given. `equipment_id` links the entry to a boat component (§5.9); an unknown
+id is rejected.
 
 `consume_stock` defaults to `true` when the task has linked consumables; set
 `false` to log the work without touching stowage-mgmt stock. The log entry

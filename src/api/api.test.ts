@@ -457,6 +457,22 @@ describe('equipment endpoints', () => {
     expect(logs.body.total).toBe(1);
     expect(logs.body.data[0].equipment_name).toBe('Port engine');
   });
+
+  it('a new task inherits the linked equipment tags when the body omits `tags`', async () => {
+    const eq = await request(app)
+      .post(`${base}/equipment`)
+      .send({ name: 'Port engine', tags: ['Engines'] });
+
+    const inherited = await request(app)
+      .post(`${base}/tasks`)
+      .send({ name: 'Oil', equipment_id: eq.body.id });
+    expect(inherited.body.tags).toEqual(['Engines']);
+
+    const optedOut = await request(app)
+      .post(`${base}/tasks`)
+      .send({ name: 'Filter', equipment_id: eq.body.id, tags: [] });
+    expect(optedOut.body.tags).toEqual([]);
+  });
 });
 
 describe('tags & health endpoints', () => {
