@@ -17,6 +17,12 @@ function makeTask(overrides: Partial<TaskDTO>): TaskDTO {
     time_warning_days: null,
     last_maintenance: null,
     last_runtime: null,
+    is_recurring: false,
+    is_archived: false,
+    equipment_id: null,
+    equipment_name: null,
+    equipment_slug: null,
+    consumables: [],
     created_at: '',
     updated_at: '',
     current_runtime: null,
@@ -105,15 +111,15 @@ describe('NotificationManager (§10.3)', () => {
     expect(app.handleMessage).toHaveBeenCalledTimes(2);
   });
 
-  it('publishes nothing for info status, but clears a prior alarm', () => {
+  it('publishes nothing for archived status, but clears a prior alarm', () => {
     const { app, manager } = makeManager();
-    manager.publishAll([makeTask({ status: 'info' })]);
+    manager.publishAll([makeTask({ status: 'archived' })]);
     expect(app.handleMessage).not.toHaveBeenCalled();
 
     manager.publishAll([
       makeTask({ status: 'overdue', runtime_status: 'overdue' }),
     ]);
-    manager.publishAll([makeTask({ status: 'info' })]);
+    manager.publishAll([makeTask({ status: 'archived' })]);
     const values = sentValues(app);
     expect(values.at(-1)?.value).toBeNull();
   });
