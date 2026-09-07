@@ -5,7 +5,7 @@
  */
 import { onUnauthorized } from '../auth/auth.js';
 
-export const API_BASE = '/plugins/signalk-maintenance-tracker/api';
+export const API_BASE = '/plugins/signalk-advanced-maintenance-tracker/api';
 
 export class ApiError extends Error {
   /**

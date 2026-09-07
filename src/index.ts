@@ -13,7 +13,7 @@ import { StowageClient } from './stowage/client';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { version: PLUGIN_VERSION } = require('../package.json');
 
-const PLUGIN_ID = 'signalk-maintenance-tracker';
+const PLUGIN_ID = 'signalk-advanced-maintenance-tracker';
 
 export = function (app: any) {
   let db: DatabaseSync | null = null;
