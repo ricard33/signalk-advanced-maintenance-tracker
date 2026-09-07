@@ -21,6 +21,9 @@ follow-up fixes.
 - Creating a task or a standalone log entry through the REST API now inherits
   the linked equipment's tags when the request omits `tags` (the web form
   already pre-filled them); send `tags: []` to opt out.
+- Mobile layout: the header now wraps to two rows instead of overflowing the
+  screen, and the task / equipment filter chips collapse behind a _Filters_
+  button (the active filters stay shown as removable chips).
 
 ## Migration notes
 

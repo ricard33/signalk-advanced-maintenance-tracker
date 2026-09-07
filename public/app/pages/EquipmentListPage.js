@@ -12,6 +12,7 @@ import { Table } from '../components/Table.js';
 import { Pagination } from '../components/Pagination.js';
 import { EquipmentFormModal } from '../components/EquipmentFormModal.js';
 import { ConfirmModal } from '../components/ConfirmModal.js';
+import { FilterBar } from '../components/FilterBar.js';
 import { toast } from '../lib/toasts.js';
 
 /** @typedef {import('../types.js').EquipmentDTO} EquipmentDTO */
@@ -152,6 +153,15 @@ export function EquipmentListPage() {
   const tagList = tagsRes.data ? tagsRes.data.data : [];
   const pageData = listRes.data;
 
+  // On a phone the tag row collapses behind a "Filters (n)" button (§7.4).
+  const activeCount = selectedTags.length;
+  /** @type {{ label: string, onRemove: () => void }[]} */
+  const activeChips = selectedTags.map((t) => ({
+    label: t,
+    onRemove: () => selectTag(t),
+  }));
+  const clearFilters = () => update({ tags: undefined, page: undefined });
+
   return html`
     <div>
       <div class="toolbar">
@@ -182,7 +192,11 @@ export function EquipmentListPage() {
 
       ${
         tagList.length
-          ? html`<div class="chip-filters">
+          ? html`<${FilterBar}
+              count=${activeCount}
+              activeChips=${activeChips}
+              onClearAll=${clearFilters}
+            >
               <div class="chips" role="group" aria-labelledby="eq-tag-filter-label">
                 <span class="chips-label" id="eq-tag-filter-label">TAGS:</span>
                 ${tagList.map(
@@ -199,7 +213,7 @@ export function EquipmentListPage() {
                   `,
                 )}
               </div>
-            </div>`
+            <//>`
           : null
       }
 

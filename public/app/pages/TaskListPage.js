@@ -17,6 +17,7 @@ import { Table } from '../components/Table.js';
 import { Pagination } from '../components/Pagination.js';
 import { StatusBadge } from '../components/StatusBadge.js';
 import { StockBadge } from '../components/StockBadge.js';
+import { FilterBar } from '../components/FilterBar.js';
 import { TaskFormModal } from '../components/TaskFormModal.js';
 import { LogEntryModal } from '../components/LogEntryModal.js';
 
@@ -201,6 +202,39 @@ export function TaskListPage() {
   const tagList = tagsRes.data ? tagsRes.data.data : [];
   const pageData = tasksRes.data;
 
+  // On a phone the filter rows collapse behind a "Filters (n)" button; the
+  // active filters stay visible there as removable chips (§7.4).
+  const activeCount =
+    (equipmentSlug ? 1 : 0) + selectedTags.length + selectedStatuses.length;
+  /** @type {{ label: string, onRemove: () => void }[]} */
+  const activeChips = [];
+  if (equipmentSlug) {
+    const eq = equipmentList.find(
+      (/** @type {import('../types.js').EquipmentDTO} */ e) =>
+        e.slug === equipmentSlug,
+    );
+    activeChips.push({
+      label: eq ? eq.name : equipmentSlug,
+      onRemove: () => selectEquipment(equipmentSlug),
+    });
+  }
+  selectedTags.forEach((t) =>
+    activeChips.push({ label: t, onRemove: () => selectTag(t) }),
+  );
+  selectedStatuses.forEach((s) =>
+    activeChips.push({
+      label: statusLabel(s),
+      onRemove: () => selectStatus(s),
+    }),
+  );
+  const clearFilters = () =>
+    update({
+      equipment: undefined,
+      tags: undefined,
+      status: undefined,
+      page: undefined,
+    });
+
   return html`
     <div>
       <div class="toolbar">
@@ -242,7 +276,11 @@ export function TaskListPage() {
         }
       </div>
 
-      <div class="chip-filters">
+      <${FilterBar}
+        count=${activeCount}
+        activeChips=${activeChips}
+        onClearAll=${clearFilters}
+      >
         ${
           equipmentList.length
             ? html`
@@ -311,7 +349,7 @@ export function TaskListPage() {
             `,
           )}
         </div>
-      </div>
+      <//>
 
       ${
         tasksRes.error && !pageData

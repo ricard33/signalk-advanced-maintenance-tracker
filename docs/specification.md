@@ -578,6 +578,13 @@ drives the attribute.
 - An **equipment** column (link) sits between name and tags; an
   **equipment filter** row of single-select chips (`EQUIPMENT:`, same pattern as
   the tag chips, omitted when no equipment exists) sits above the tag row.
+- On a narrow screen (≤ 640 px) the filter rows collapse behind a **Filters
+  (n)** button (n = active filter count); the active filters stay visible below
+  it as removable chips with a "Clear all". Expanded, each row is a single
+  horizontally-scrolling line so a long equipment/tag list can't push the table
+  off-screen. Above 640 px the rows are always shown and the toggle is hidden.
+  jsdom has no `matchMedia`, so under test the bar mounts expanded and the row
+  structure is unchanged.
 - Live-updating via the data layer's polling (default 5 s, configurable — §7.6).
 
 **Task Detail (`/tasks/:slug`)**
@@ -605,8 +612,9 @@ drives the attribute.
 - Hand-rolled `<Table/>`: name (link), tags (chips), brand, model, linked-task
   count, linked-log count, and — logged in — edit/delete icons.
 - Toolbar: freeform search box; "New Equipment" button (logged in). A
-  single-select tag filter row (omitted when no tags exist). Server-side
-  search/sort/paging, URL-hash list state, 5 s polling.
+  single-select tag filter row (omitted when no tags exist), collapsing behind
+  the same **Filters (n)** button as the task list on ≤ 640 px screens.
+  Server-side search/sort/paging, URL-hash list state, 5 s polling.
 
 **Equipment Detail (`/equipment/:slug`)**
 
@@ -787,6 +795,14 @@ Canonical example: `prefers-color-scheme` for initial theme (Chrome 76; on 69 it
 just doesn't match and we fall back to the default theme, toggle still works, §7.3).
 The rule of thumb: an unsupported feature must degrade to _acceptable_, never to
 _broken_.
+
+**Narrow screens (≤ 640 px).** A `max-width: 640px` media block reflows the shell
+header onto two rows — title + theme toggle, then the nav full-width (horizontally
+scrolling if it can't fit) — instead of letting the single-row grid overflow the
+viewport. The task/equipment filter rows collapse behind a _Filters (n)_ button
+(§7.4); once opened, each row scrolls horizontally rather than wrapping to many
+lines. The `FilterBar` open/closed default is read from `window.matchMedia`
+(guarded — absent on Chromium 69 and under jsdom, where it falls back to open).
 
 **Verification.** Because there is no build to catch this, compatibility is a review
 checklist item, and the polish phase (§14.10) includes a smoke test on a Chromium-69

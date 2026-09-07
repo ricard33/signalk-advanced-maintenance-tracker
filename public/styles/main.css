@@ -133,6 +133,45 @@ pre {
   margin: 0 8px;
 }
 
+/* Phones (§7.9): the header wraps to two rows — title + theme toggle on the
+   first, the nav full-width on the second — instead of overflowing off the
+   right edge. Grid placement is explicit so nothing auto-flows to a 3rd row. */
+@media (max-width: 640px) {
+  .shell-header {
+    grid-template-columns: 1fr auto;
+    grid-gap: 6px 8px;
+    height: auto;
+    min-height: 48px;
+    padding: 8px 12px;
+  }
+  .shell-title {
+    grid-row: 1;
+    grid-column: 1;
+    font-size: 17px;
+  }
+  .shell-header > .btn-icon {
+    grid-row: 1;
+    grid-column: 2;
+  }
+  .shell-nav {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .shell-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .shell-nav > * {
+    margin-right: 8px;
+    flex: 0 0 auto;
+  }
+  .nav-link {
+    padding: 4px 9px;
+  }
+}
+
 .page-header {
   display: flex;
   align-items: center;
@@ -500,6 +539,75 @@ pre {
 }
 .chip .bi {
   margin-left: 6px;
+}
+
+/* ---- collapsible filter bar (§7.4) ---- */
+
+/* On phones the filter rows collapse behind this button; the toggle and the
+   active-filter summary are hidden on wider screens (rows always shown). */
+.filters-toggle {
+  display: inline-flex;
+  margin-bottom: 8px;
+}
+.filter-active {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.filter-active > * {
+  margin-right: 6px;
+  margin-bottom: 4px;
+}
+
+@media (min-width: 641px) {
+  .filters-toggle,
+  .filter-active {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .toolbar {
+    flex-wrap: wrap;
+  }
+  .toolbar .search-box {
+    width: 100%;
+  }
+  .toolbar-action {
+    margin-left: 0;
+  }
+
+  .chip-filters.collapsed {
+    display: none;
+  }
+  /* Expanded: each row stays a single horizontally-scrolling line (3 lines,
+     not 15) with its label pinned and the selected chip pulled to the front.
+     Scoped to .chip-filters so table-cell / page-title / TagInput .chips rows
+     are untouched. */
+  .chip-filters .chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .chip-filters .chips::-webkit-scrollbar {
+    display: none;
+  }
+  .chip-filters .chips > * {
+    flex: 0 0 auto;
+    margin-bottom: 0;
+  }
+  .chip-filters .chips-label {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--bg);
+    padding-right: 6px;
+  }
+  .chip-filters .chip.selected {
+    order: -1;
+  }
 }
 
 /* ---- consumables picker (parts used, docs/inventory-interaction.md) ---- */

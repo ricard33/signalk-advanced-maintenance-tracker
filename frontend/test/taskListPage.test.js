@@ -4,7 +4,7 @@ import { html } from '../../public/app/lib/html.js';
 import { TaskListPage } from '../../public/app/pages/TaskListPage.js';
 import { authState } from '../../public/app/auth/auth.js';
 import { route, parseHash } from '../../public/app/lib/router.js';
-import { mockFetch, apiRoutes, makeTask } from './helpers.js';
+import { mockFetch, apiRoutes, makeTask, makeEquipment } from './helpers.js';
 
 describe('TaskListPage (§7.4)', () => {
   it('renders rows with status, remaining values, and tags', async () => {
@@ -130,6 +130,25 @@ describe('TaskListPage (§7.4)', () => {
 
     fireEvent.click(screen.getByText('Rigging'));
     await waitFor(() => expect(route.value.query.tags).toBeUndefined());
+  });
+
+  it('counts the active filters on the (mobile) Filters toggle', async () => {
+    mockFetch(
+      apiRoutes({
+        tasks: [],
+        tags: [{ id: 1, name: 'Engines', count: 3 }],
+        equipment: [makeEquipment({ id: 1, slug: 'port-engine' })],
+      }),
+    );
+    route.value = parseHash('#/tasks?equipment=port-engine&status=overdue');
+    authState.value = { checked: true, isLoggedIn: false, username: null };
+    render(html`<${TaskListPage} />`);
+    await waitFor(() =>
+      expect(document.querySelector('.filters-toggle')).toBeTruthy(),
+    );
+    expect(document.querySelector('.filters-toggle').textContent).toContain(
+      'Filters (2)',
+    );
   });
 
   it('status chips single-select and filter alongside the other options', async () => {
