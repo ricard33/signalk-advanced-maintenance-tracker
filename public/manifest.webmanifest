@@ -6,8 +6,16 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["utilities"],
   "background_color": "#f5f6f8",
   "theme_color": "#f5f6f8",
+  "shortcuts": [
+    { "name": "Tasks", "url": "./#/tasks" },
+    { "name": "Log", "url": "./#/log" },
+    { "name": "Equipment", "url": "./#/equipment" }
+  ],
   "icons": [
     {
       "src": "icons/icon-192.png",

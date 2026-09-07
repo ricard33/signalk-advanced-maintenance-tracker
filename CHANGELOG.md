@@ -1,3 +1,18 @@
+# v1.7.0
+
+Install the maintenance tracker as an app.
+
+## Highlights
+
+- **Installable web app.** Add the webapp to your phone, tablet or desktop home
+  screen and it launches standalone — its own window and icon, no browser
+  chrome, plus long-press shortcuts to Tasks, Log and Equipment. It stays
+  online-only (no offline mode). Browsers only offer to _install_ (rather than a
+  plain bookmark) when the SignalK server has a trusted TLS certificate — see
+  the README for issuing one for a LAN address with mkcert.
+- **Status-bar colour follows the theme.** In the installed app the status bar
+  now tracks the light/dark toggle and the B&G/Navico `?mode=night` parameter.
+
 # v1.6.4
 
 Published under a new name — **Advanced Maintenance Tracker** — with a couple of

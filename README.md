@@ -52,6 +52,29 @@ Advanced Maintenance Tracker). The webapp appears under Webapps as
 **Advanced Maintenance Tracker**; data is stored in the plugin's data directory 
 as `maintenance.db`.
 
+### Install on a phone or tablet
+
+Add the webapp to your home screen and it launches standalone — its own window
+and icon, no browser chrome, plus long-press shortcuts to Tasks, Log and
+Equipment (Android Chrome: _Install app_ / _Add to Home screen_; iOS Safari:
+_Share → Add to Home Screen_). It's online-only — there is no offline mode.
+
+The browser will only offer to **install** (as opposed to a plain bookmark) when
+the SignalK server has a **trusted** TLS certificate — not plain `http://`, and
+not a self-signed certificate (the "proceed anyway" bypass doesn't count).
+Without a domain name, issue a certificate for the server's LAN IP with
+[mkcert](https://github.com/FiloSottile/mkcert):
+
+```sh
+mkcert -install               # create + trust a local CA
+mkcert 192.168.1.4 localhost  # cert for your server's address
+```
+
+point SignalK at the generated cert/key, and install the mkcert **root CA** on
+every device that should install the app (Android: Settings → Security →
+Encryption & credentials → Install a certificate → CA certificate). With a real
+domain, a reverse proxy with automatic Let's Encrypt (e.g. Caddy) is simpler.
+
 ### Plugin options
 
 | option                   | default | purpose                                           |

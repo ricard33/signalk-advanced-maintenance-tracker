@@ -39,6 +39,15 @@ export const theme = signal(initialTheme());
 
 export function applyTheme() {
   document.documentElement.setAttribute('data-theme', theme.value);
+  // Keep the standalone-PWA status bar in step with the theme (matches --bg in
+  // tokens.css and the first-paint script in index.html).
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) {
+    meta.setAttribute(
+      'content',
+      theme.value === 'dark' ? '#14171a' : '#f5f6f8',
+    );
+  }
 }
 
 export function toggleTheme() {

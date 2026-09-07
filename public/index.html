@@ -23,16 +23,9 @@
     />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
     <link rel="manifest" href="./manifest.webmanifest" />
-    <meta
-      name="theme-color"
-      content="#f5f6f8"
-      media="(prefers-color-scheme: light)"
-    />
-    <meta
-      name="theme-color"
-      content="#14171a"
-      media="(prefers-color-scheme: dark)"
-    />
+    <!-- Single tag; the pre-paint script below points it at the active theme's
+         --bg so the standalone status bar follows the in-app toggle. -->
+    <meta name="theme-color" content="#f5f6f8" />
     <!-- iOS home-screen bookmark: run standalone with the app title. -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -65,6 +58,10 @@
               : 'light';
         }
         document.documentElement.setAttribute('data-theme', theme);
+        var tc = document.querySelector('meta[name="theme-color"]');
+        if (tc) {
+          tc.setAttribute('content', theme === 'dark' ? '#14171a' : '#f5f6f8');
+        }
       })();
     </script>
     <link

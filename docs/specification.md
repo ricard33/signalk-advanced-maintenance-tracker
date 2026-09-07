@@ -38,7 +38,9 @@ progressively enhancing on modern browsers (§7.9).
 - The plugin builds **no** authorization of its own — SignalK enforces API access
   (§9).
 - No multi-vessel support; operates on `vessels.self`.
-- No offline/PWA support.
+- No offline support. The webapp is **installable** (manifest only — standalone
+  window and icon, §7.10) but has no service worker: it needs the server
+  reachable to do anything.
 
 ---
 
@@ -809,6 +811,37 @@ checklist item, and the polish phase (§14.10) includes a smoke test on a Chromi
 engine (e.g. via a matching Puppeteer/BrowserStack target) covering load, list,
 detail, and the complete-task flow.
 
+### 7.10 Installable app (manifest)
+
+The webapp installs to a phone/tablet/desktop home screen and launches
+standalone — its own window, own icon, no browser chrome. This is **purely
+declarative**: `public/manifest.webmanifest` + a few `<meta>` tags in
+`index.html`. There is **no service worker** — no offline mode, no runtime
+caching, no update prompt (an earlier iteration added one; it bought little for
+a always-online boat tool and is not worth the failure modes below).
+
+**Manifest** — `display: standalone`, 192 & 512 PNG icons (`any` + `maskable`,
+from `frontend/scripts/icons.mjs`), `lang`/`dir`/`categories`, and `shortcuts`
+(Tasks / Log / Equipment) using hash URLs. `id`, `start_url` and `scope` stay
+**relative** (`./`) so it works unchanged under the plugin mount
+`/signalk-advanced-maintenance-tracker/`.
+
+**Status-bar colour** — `applyTheme()` (and the first-paint script in
+`index.html`) point a single `<meta name="theme-color">` at the active theme's
+`--bg`, so the standalone status bar tracks the light/dark toggle and
+`?mode=night`.
+
+**Requires a _trusted_ TLS certificate**, not just HTTPS. A browser will not
+offer to install a page served with a certificate error, and the "proceed
+anyway" bypass does **not** lift that — so SignalK's default self-signed
+certificate is not enough. Desktop Chrome is more lenient (it may still show the
+install affordance), which can make a bad cert look like it "half works" while
+Android refuses. On a LAN with no domain, issue a certificate for the server's
+IP with a locally-trusted CA (mkcert) and install that CA on every device;
+otherwise put SignalK behind a reverse proxy with a real certificate. Modern
+Chrome (desktop and Android) needs no service worker for installability once the
+certificate is trusted.
+
 ---
 
 ## 8. REST API
@@ -1281,7 +1314,8 @@ Coverage expectations by layer:
   de-duplication (§10.3), against a stubbed `app.handleMessage`/streambundle.
 - **Frontend tests** — component/hook tests for the data layer, auth gating
   (§7.7), and the key page flows (task list filtering, complete modal), with the
-  REST API mocked.
+  REST API mocked; plus a check that `manifest.webmanifest` keeps the fields a
+  browser needs to offer install (§7.10).
 
 Suggested tooling: **vitest** for both backend and frontend, with
 **@testing-library/preact** (jsdom) on the frontend; final framework choice is an
