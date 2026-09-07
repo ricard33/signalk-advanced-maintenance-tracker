@@ -1,5 +1,5 @@
 {
-  "name": "Maintenance Tracker",
+  "name": "Advanced Maintenance Tracker",
   "short_name": "Maintenance",
   "description": "Track recurring boat maintenance tasks with runtime- and time-based intervals.",
   "id": "./",

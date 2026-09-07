@@ -1060,7 +1060,7 @@ Standard SignalK plugin shape:
 module.exports = function (app) {
   const plugin = {
     id: 'signalk-advanced-maintenance-tracker',
-    name: 'Maintenance Tracker',
+    name: 'Advanced Maintenance Tracker',
     description: 'Track recurring boat maintenance tasks.',
     schema,                    // §10.4
     start(options) { … },      // open db, run migrations, subscribe, mount timers

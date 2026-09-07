@@ -48,8 +48,9 @@ npm install signalk-advanced-maintenance-tracker
 ```
 
 Enable the plugin in the SignalK admin UI (Server → Plugin Config →
-Maintenance Tracker). The webapp appears under Webapps as **Maintenance
-Tracker**; data is stored in the plugin's data directory as `maintenance.db`.
+Advanced Maintenance Tracker). The webapp appears under Webapps as 
+**Advanced Maintenance Tracker**; data is stored in the plugin's data directory 
+as `maintenance.db`.
 
 ### Plugin options
 

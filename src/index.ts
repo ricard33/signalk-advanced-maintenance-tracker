@@ -43,7 +43,7 @@ export = function (app: any) {
 
   const plugin = {
     id: PLUGIN_ID,
-    name: 'Maintenance Tracker',
+    name: 'Advanced Maintenance Tracker',
     description:
       'Track recurring boat maintenance tasks with runtime- and time-based intervals.',
     schema,
