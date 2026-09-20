@@ -168,6 +168,24 @@ export class TasksRepo {
     return row.n;
   }
 
+  /** task id → last status e-mailed about (only tasks with a marker). */
+  notifiedStatuses(): Map<number, string> {
+    const rows = this.db
+      .prepare(
+        `SELECT id, last_notified_status AS s FROM tasks
+         WHERE last_notified_status IS NOT NULL`,
+      )
+      .all() as unknown as { id: number; s: string }[];
+    return new Map(rows.map((r) => [r.id, r.s]));
+  }
+
+  /** Record (or, with null, clear) the status a task was last e-mailed about. */
+  setNotifiedStatus(id: number, status: string | null): void {
+    this.db
+      .prepare(`UPDATE tasks SET last_notified_status = ? WHERE id = ?`)
+      .run(status, id);
+  }
+
   /** Distinct non-null runtime paths across all tasks (drives subscriptions). */
   runtimePaths(): string[] {
     const rows = this.db

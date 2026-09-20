@@ -1,3 +1,22 @@
+# v1.8.0
+
+E-mail alerts for approaching and passed deadlines.
+
+## Highlights
+
+- **E-mail alerts.** Get an HTML e-mail when a task becomes due soon and again
+  when it becomes overdue — the same moments as the SignalK notifications. The
+  mail shows the task, its description, its due date (and time left or overdue),
+  the engine hours, and a link straight to the task. Set it up in the plugin
+  options: SMTP server, sender, recipients, the SignalK server's base URL (for
+  the link) and the mail language (English or French). One mail per change,
+  never repeated — also not after a restart.
+
+## Smaller changes and fixes
+
+- New dependency: `nodemailer` (the plugin's first runtime dependency).
+- Database migration 10 adds `tasks.last_notified_status`.
+
 # v1.7.0
 
 Install the maintenance tracker as an app.

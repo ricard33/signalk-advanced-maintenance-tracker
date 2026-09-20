@@ -219,4 +219,15 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 10,
+    up(db) {
+      // v1.8: e-mail alerts. Remembers the last status ('due_soon' |
+      // 'overdue') a task was e-mailed about, so a plugin restart doesn't
+      // re-send mail for every task that is already due. NULL = not currently
+      // notified. Kept out of TaskRow/TaskDTO on purpose — it is delivery
+      // bookkeeping, not task data.
+      db.exec(`ALTER TABLE tasks ADD COLUMN last_notified_status TEXT;`);
+    },
+  },
 ];

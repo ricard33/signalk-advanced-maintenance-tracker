@@ -26,6 +26,9 @@ else that comes due by engine hours, by calendar time, or both.
   status, and each task can also publish to `maintenance.{slug}.data` and
   `maintenance.{slug}.status`, so it shows up in any SignalK notification
   consumer or dashboard.
+- **E-mail alerts** — optionally get an HTML e-mail (task, description, due
+  date and a link to the task) when a task becomes due soon and again when it
+  becomes overdue. Configure your SMTP server in the plugin options.
 - **Modern webapp** — buildless Preact SPA served from the SignalK webapps
   menu: searchable/filterable task table, tag chips, progress bars, light/dark
   theme, live polling. Runs on browsers as old as Chromium 69 (Navico/B&G
@@ -88,6 +91,28 @@ domain, a reverse proxy with automatic Let's Encrypt (e.g. Caddy) is simpler.
 | `timeNotifyLeadDays`     | `7`     | days before due to raise "due soon"               |
 | `recomputeIntervalMs`    | `60000` | status recompute tick in ms                       |
 | `stowageMgmtUrl`         | `''`    | signalk-stowage-mgmt API URL (blank = disabled)   |
+| `email`                  | off     | e-mail alerts — see below                         |
+
+### E-mail alerts
+
+Set `email.enabled` and fill in the SMTP settings in the plugin options:
+
+| `email.` option | default | purpose                                                            |
+| --------------- | ------- | ------------------------------------------------------------------ |
+| `enabled`       | `false` | master switch                                                      |
+| `smtpHost`      | `''`    | SMTP server                                                        |
+| `smtpPort`      | `587`   | usually 587 (STARTTLS) or 465 (implicit TLS)                       |
+| `smtpSecure`    | `false` | implicit TLS — enable for port 465                                 |
+| `smtpUser`      | `''`    | login (blank = no authentication)                                  |
+| `smtpPassword`  | `''`    | password                                                           |
+| `from`          | `''`    | sender, e.g. `Boat maintenance <maintenance@example.com>`          |
+| `to`            | `''`    | recipient(s), comma-separated                                      |
+| `baseUrl`       | `''`    | SignalK server URL, e.g. `https://boat.local:3443` — for the link  |
+| `language`      | `en`    | e-mail language: `en` or `fr`                                      |
+
+One e-mail is sent when a task becomes due soon and another when it becomes
+overdue — never repeated, including across restarts. Once a task is back to OK
+(maintenance logged), its next due date alerts again.
 
 ## 🔧 Inventory integration: signalk-stowage-mgmt
 

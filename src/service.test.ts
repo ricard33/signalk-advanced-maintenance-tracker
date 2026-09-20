@@ -24,7 +24,7 @@ function makeService(
 describe('migrations', () => {
   it('applies schema and records version', () => {
     const { db } = makeService();
-    expect(schemaVersion(db)).toBe(9);
+    expect(schemaVersion(db)).toBe(10);
     const tables = (
       db.prepare(`SELECT name FROM sqlite_master WHERE type='table'`).all() as {
         name: string;

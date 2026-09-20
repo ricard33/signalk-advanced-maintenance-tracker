@@ -92,6 +92,9 @@ and discovering candidate runtime-path _names_ for the task editor
   `ExperimentalWarning`. See §5.8 for the API notes that differ from
   `better-sqlite3`.
 - **HTTP:** Express `Router` provided by SignalK's `registerWithRouter(router)`.
+- **E-mail:** [`nodemailer`](https://nodemailer.com) over SMTP, for the optional
+  due-soon / overdue alerts (§10.3). It is the plugin's only runtime
+  dependency (`dependencies` in `package.json`).
 - **Migrations:** simple in-code versioned migration runner (see §5.5).
 
 ### Frontend
@@ -222,6 +225,10 @@ Constraints/notes:
   from whether an interval is present, which keeps pre-v1.5 API calls working.
   Toggling a recurring task to todo clears its schedule fields.
 - `time_interval` + `time_interval_unit` are set/cleared together.
+- Since v1.8 (migration 10) a task carries `last_notified_status` (TEXT NULL):
+  the status (`due_soon` | `overdue`) the task was last **e-mailed** about
+  (§10.3), so a restart doesn't re-send. NULL = not currently notified. It is
+  delivery bookkeeping, deliberately absent from the task DTO and the API.
 
 ### 5.2 `tags`
 
@@ -1175,6 +1182,20 @@ Notifications are only published when
 spam); a task with both dimensions publishes one notification reflecting the more
 urgent dimension, with the message naming which dimension triggered it.
 
+**E-mail alerts (v1.8).** The same recompute pass also drives optional e-mail
+alerts (`email.enabled`, independent of `enableNotifications`). An HTML e-mail
+(with a plain-text alternative) is sent when a task's status becomes `due_soon`
+or `overdue`; the message shows the task name, its description, the due date
+and remaining/overdue time, the runtime hours, and — when `email.baseUrl` is set
+— a link to `<baseUrl>/signalk-advanced-maintenance-tracker/#/tasks/<slug>`.
+The last status mailed is stored per task (`tasks.last_notified_status`, §5.1),
+so there is exactly one mail per change: `due_soon → overdue` sends a second
+one, repeated recomputes and plugin restarts send nothing. Returning to any
+other status (ok, archived, …) clears the marker, so the next due date mails
+again. Sends are asynchronous and sequential; a failed send is logged and
+retried on the next recompute, and never affects the SignalK notifications.
+Mail content is localized (`email.language`: `en` | `fr`).
+
 > Note on path: SignalK's notification tree is `notifications.*` (plural). The
 > initial spec wrote `notification.maintenance.{slug}.*`; this spec uses the
 > SignalK-correct `notifications.maintenance.{slug}`. Splitting into
@@ -1193,6 +1214,14 @@ Exposed in the SignalK admin UI (`plugin.schema`):
 | `runtimeNotifyLeadHours` | number  | 10      | runtime lead window for `due_soon`/warn   |
 | `timeNotifyLeadDays`     | number  | 7       | time lead window for `due_soon`/warn      |
 | `recomputeIntervalMs`    | number  | 60000   | backend status-recompute tick             |
+| `email`                  | object  | off     | e-mail alerts (below)                     |
+
+`email` is a nested object: `enabled` (false), `smtpHost`, `smtpPort` (587),
+`smtpSecure` (false — implicit TLS, for port 465), `smtpUser`, `smtpPassword`
+(masked in the admin UI), `from`, `to` (comma-separated), `baseUrl` (SignalK
+server origin, for the task link) and `language` (`en` | `fr`, default `en`).
+Alerts are sent only when `enabled` is true and `smtpHost`, `from` and `to` are
+all set.
 
 (Per-task runtime paths are stored with the tasks, not in plugin config, so the
 subscription set is derived from the DB.)
@@ -1270,7 +1299,8 @@ These were open during drafting and are now settled:
   and runs unchanged, so it is not gitignored, has no `outDir`, and `clean` never
   touches it. `frontend/` supplies only dev-time type-checking + tests.
 - No runtime DB dependency: `node:sqlite` is part of Node itself (no
-  `better-sqlite3`, no native build step). `engines.node` enforces the ≥22.5 floor
+  `better-sqlite3`, no native build step). The only runtime dependency is
+  `nodemailer`, for e-mail alerts (§10.3). `engines.node` enforces the ≥22.5 floor
   the module requires; `@types/node` supplies its type definitions.
 - Published package ships compiled `dist/` (backend) and the `public/` webapp
   source; `dist/` is gitignored but included via `files`.

@@ -1,9 +1,10 @@
 import * as path from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import type { Router } from 'express';
-import { PluginOptions, schema, withDefaults } from './config';
+import { PartialPluginOptions, schema, uiSchema, withDefaults } from './config';
 import { openDatabase } from './db/database';
 import { MaintenanceService } from './service';
+import { EmailNotifier } from './signalk/email';
 import { NotificationManager } from './signalk/notifications';
 import { PathPublisher } from './signalk/paths';
 import { RuntimeManager } from './signalk/runtime';
@@ -19,6 +20,7 @@ export = function (app: any) {
   let db: DatabaseSync | null = null;
   let runtime: RuntimeManager | null = null;
   let notifier: NotificationManager | null = null;
+  let emailNotifier: EmailNotifier | null = null;
   let publisher: PathPublisher | null = null;
   let service: MaintenanceService | null = null;
   let timer: NodeJS.Timeout | null = null;
@@ -30,6 +32,11 @@ export = function (app: any) {
       const computed = service.listAllComputed();
       notifier?.publishAll(computed);
       publisher?.publishAll(computed);
+      // Async and fire-and-forget: a slow or failing SMTP server must not
+      // hold up (or break) the SignalK notifications above.
+      emailNotifier?.publishAll(computed).catch((err) => {
+        app.error?.(`${PLUGIN_ID}: e-mail alerts failed: ${err}`);
+      });
     } catch (err) {
       app.error?.(`${PLUGIN_ID}: notification recompute failed: ${err}`);
     }
@@ -47,8 +54,9 @@ export = function (app: any) {
     description:
       'Track recurring boat maintenance tasks with runtime- and time-based intervals.',
     schema,
+    uiSchema,
 
-    start(options: Partial<PluginOptions>) {
+    start(options: PartialPluginOptions) {
       const opts = withDefaults(options);
       try {
         const dbPath = path.join(app.getDataDirPath(), 'maintenance.db');
@@ -72,6 +80,11 @@ export = function (app: any) {
           stowageClient: opts.stowageMgmtUrl
             ? new StowageClient({ baseUrl: opts.stowageMgmtUrl })
             : undefined,
+        });
+        const tasksRepo = service.tasks;
+        emailNotifier = new EmailNotifier(app, opts.email, {
+          load: () => tasksRepo.notifiedStatuses(),
+          set: (id, status) => tasksRepo.setNotifiedStatus(id, status),
         });
         runtime.onUpdate(() => recomputeNotifications());
         services = { service, runtime, version: PLUGIN_VERSION };
@@ -99,6 +112,8 @@ export = function (app: any) {
       services = null;
       service = null;
       notifier = null;
+      emailNotifier?.close();
+      emailNotifier = null;
       publisher = null;
       runtime = null;
       try {
