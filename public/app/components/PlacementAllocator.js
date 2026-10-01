@@ -13,6 +13,7 @@
  * editable — it's always "however much of what's still needed fits here".
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useEffect, useState } from '../../vendor/preact-hooks.js';
 
 /** @typedef {import('../api/stowage.js').StowagePlacement} StowagePlacement */
@@ -100,7 +101,7 @@ export function PlacementAllocator(props) {
   return html`
     <div class="field">
       <label class="field-label"
-        >Where did the ${required} × ${itemName} come from?</label
+        >${tr('Where did the {qty} × {name} come from?', { qty: required, name: itemName })}</label
       >
       ${picks.map((pick, index) => {
         const exclude = pickedElsewhere(index);
@@ -110,16 +111,16 @@ export function PlacementAllocator(props) {
         return html`<div key=${index} class="consumables-row">
           <select
             class="select"
-            aria-label=${'Location ' + (index + 1) + ' for ' + itemName}
+            aria-label=${tr('Location {n} for {name}', { n: index + 1, name: itemName })}
             value=${pick || ''}
             onInput=${(/** @type {any} */ e) =>
               setPick(index, e.currentTarget.value)}
           >
-            <option value="">Select a location…</option>
+            <option value="">${tr('Select a location…')}</option>
             ${options.map(
               (p) =>
                 html`<option key=${p.id} value=${p.id}>
-                  ${p.location_name || 'Unspecified location'} (${p.quantity} available)
+                  ${tr('{location} ({qty} available)', { location: p.location_name || tr('Unspecified location'), qty: p.quantity })}
                 </option>`,
             )}
           </select>
@@ -128,8 +129,8 @@ export function PlacementAllocator(props) {
               ? html`<button
                   type="button"
                   class="btn-icon danger"
-                  aria-label=${'Remove location ' + (index + 1)}
-                  title="Remove"
+                  aria-label=${tr('Remove location {n}', { n: index + 1 })}
+                  title=${tr('Remove')}
                   onClick=${() => removeRow(index)}
                 >
                   <i class="bi bi-x" />
@@ -143,11 +144,13 @@ export function PlacementAllocator(props) {
           ? html`<div class="field-error">
               ${
                 exhausted
-                  ? 'Not enough stock across known locations to cover this amount.'
-                  : remaining + ' still needs a location.'
+                  ? tr(
+                      'Not enough stock across known locations to cover this amount.',
+                    )
+                  : tr('{n} still needs a location.', { n: remaining })
               }
             </div>`
-          : html`<div class="field-hint">Fully allocated.</div>`
+          : html`<div class="field-hint">${tr('Fully allocated.')}</div>`
       }
     </div>
   `;

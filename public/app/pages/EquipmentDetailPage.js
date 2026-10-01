@@ -4,6 +4,7 @@
  * in (§7.7).
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useState } from '../../vendor/preact-hooks.js';
 import {
   useEquipment,
@@ -52,11 +53,11 @@ export function EquipmentDetailPage(props) {
   const eq = eqRes.data;
   if (eqRes.error && !eq) {
     return html`<div class="error-box">
-      Failed to load equipment: ${eqRes.error.message}
+      ${tr('Failed to load equipment: {error}', { error: eqRes.error.message })}
     </div>`;
   }
   if (!eq) {
-    return html`<div class="table-loading">Loading…</div>`;
+    return html`<div class="table-loading">${tr('Loading…')}</div>`;
   }
 
   const tasks = tasksRes.data ? tasksRes.data.data : [];
@@ -66,20 +67,20 @@ export function EquipmentDetailPage(props) {
   const taskColumns = [
     {
       key: 'status',
-      label: 'Status',
+      label: tr('Status'),
       render: (/** @type {TaskDTO} */ t) =>
         html`<${StatusBadge} status=${t.status} />`,
     },
     {
       key: 'name',
-      label: 'Name',
+      label: tr('Name'),
       className: 'col-name',
       render: (/** @type {TaskDTO} */ t) =>
         html`<a href=${'#/tasks/' + encodeURIComponent(t.slug)}>${t.name}</a>`,
     },
     {
       key: 'remaining_runtime',
-      label: 'Runtime Left',
+      label: tr('Runtime Left'),
       className: 'num hide-sm',
       render: (/** @type {TaskDTO} */ t) =>
         html`<span class=${'remaining ' + (t.runtime_status || '')}
@@ -88,7 +89,7 @@ export function EquipmentDetailPage(props) {
     },
     {
       key: 'remaining_time',
-      label: 'Time left',
+      label: tr('Time left'),
       className: 'num hide-sm',
       render: (/** @type {TaskDTO} */ t) =>
         html`<span class=${'remaining ' + (t.time_status || '')}
@@ -101,7 +102,7 @@ export function EquipmentDetailPage(props) {
   const logColumns = [
     {
       key: 'task',
-      label: 'Task',
+      label: tr('Task'),
       render: (/** @type {LogDTO} */ e) =>
         e.task_slug !== null
           ? html`<a href=${'#/tasks/' + encodeURIComponent(e.task_slug)}
@@ -111,13 +112,13 @@ export function EquipmentDetailPage(props) {
     },
     {
       key: 'maintenance_date',
-      label: 'Date',
+      label: tr('Date'),
       className: 'num',
       render: (/** @type {LogDTO} */ e) => formatDate(e.maintenance_date),
     },
     {
       key: 'runtime_hours',
-      label: 'Runtime',
+      label: tr('Runtime'),
       className: 'num hide-sm',
       render: (/** @type {LogDTO} */ e) => formatHours(e.runtime_hours),
     },
@@ -131,8 +132,8 @@ export function EquipmentDetailPage(props) {
         <button
           type="button"
           class="btn-icon primary"
-          aria-label="Edit log entry"
-          title="Edit"
+          aria-label=${tr('Edit log entry')}
+          title=${tr('Edit')}
           onClick=${() => setEditingEntry(e)}
         >
           <i class="bi bi-pencil" />
@@ -140,8 +141,8 @@ export function EquipmentDetailPage(props) {
         <button
           type="button"
           class="btn-icon danger"
-          aria-label="Delete log entry"
-          title="Delete"
+          aria-label=${tr('Delete log entry')}
+          title=${tr('Delete')}
           onClick=${() => setDeletingEntry(e)}
         >
           <i class="bi bi-trash" />
@@ -172,14 +173,14 @@ export function EquipmentDetailPage(props) {
                     class="btn btn-primary"
                     onClick=${() => setEditing(true)}
                   >
-                    <i class="bi bi-pencil" />Edit
+                    <i class="bi bi-pencil" />${tr('Edit')}
                   </button>
                   <button
                     type="button"
                     class="btn btn-danger"
                     onClick=${() => setDeleting(true)}
                   >
-                    <i class="bi bi-trash" />Delete
+                    <i class="bi bi-trash" />${tr('Delete')}
                   </button>
                 </span>
               `
@@ -189,25 +190,25 @@ export function EquipmentDetailPage(props) {
 
       <div class="detail-grid">
         <div class="card">
-          <h3>Details</h3>
+          <h3>${tr('Details')}</h3>
           <${StatTable}
             rows=${[
-              { label: 'Brand', value: eq.brand },
-              { label: 'Model', value: eq.model },
-              { label: 'Serial number', value: eq.serial_number },
+              { label: tr('Brand'), value: eq.brand },
+              { label: tr('Model'), value: eq.model },
+              { label: tr('Serial number'), value: eq.serial_number },
               {
-                label: 'Purchased',
+                label: tr('Purchased'),
                 value: eq.purchase_date ? formatDate(eq.purchase_date) : null,
               },
               {
-                label: 'Price',
+                label: tr('Price'),
                 value:
                   eq.purchase_price !== null && eq.purchase_price !== undefined
                     ? String(eq.purchase_price)
                     : null,
               },
               {
-                label: 'Warranty until',
+                label: tr('Warranty until'),
                 value: eq.warranty_until ? formatDate(eq.warranty_until) : null,
               },
             ]}
@@ -219,7 +220,7 @@ export function EquipmentDetailPage(props) {
             !eq.purchase_date &&
             eq.purchase_price === null &&
             !eq.warranty_until
-              ? html`<p class="muted" style="margin:0">No details recorded.</p>`
+              ? html`<p class="muted" style="margin:0">${tr('No details recorded.')}</p>`
               : null
           }
         </div>
@@ -227,7 +228,7 @@ export function EquipmentDetailPage(props) {
         ${
           eq.description
             ? html`<div class="card">
-                <h3>Description</h3>
+                <h3>${tr('Description')}</h3>
                 <${MarkdownView} markdown=${eq.description} />
               </div>`
             : null
@@ -235,17 +236,17 @@ export function EquipmentDetailPage(props) {
       </div>
 
       <h2 class="page-title" style="font-size:17px">
-        Tasks (${tasks.length})
+        ${tr('Tasks ({n})', { n: tasks.length })}
       </h2>
       <${Table}
         columns=${taskColumns}
         rows=${tasks}
         loading=${tasksRes.loading}
-        emptyMessage="No tasks linked to this equipment."
+        emptyMessage=${tr('No tasks linked to this equipment.')}
       />
 
       <h2 class="page-title" style="font-size:17px;margin-top:16px">
-        Log entries (${logs.length})
+        ${tr('Log entries ({n})', { n: logs.length })}
       </h2>
       <${Table}
         columns=${logColumns}
@@ -259,7 +260,7 @@ export function EquipmentDetailPage(props) {
               </div>`
             : null}
         loading=${logsRes.loading}
-        emptyMessage="No log entries linked to this equipment."
+        emptyMessage=${tr('No log entries linked to this equipment.')}
       />
 
       ${
@@ -273,18 +274,20 @@ export function EquipmentDetailPage(props) {
       ${
         deletingEntry
           ? html`<${ConfirmModal}
-              title="Delete log entry"
+              title=${tr('Delete log entry')}
               message=${
                 deletingEntry.task_id !== null
-                  ? "Delete this log entry? The task's last-maintenance data will be recomputed."
-                  : 'Delete this log entry? This cannot be undone.'
+                  ? tr(
+                      "Delete this log entry? The task's last-maintenance data will be recomputed.",
+                    )
+                  : tr('Delete this log entry? This cannot be undone.')
               }
               onConfirm=${async () => {
                 await deleteLog(
                   deletingEntry.id,
                   deletingEntry.task_slug || undefined,
                 );
-                toast('Log entry deleted.', 'success');
+                toast(tr('Log entry deleted.'), 'success');
                 setDeletingEntry(null);
               }}
               onClose=${() => setDeletingEntry(null)}
@@ -307,21 +310,20 @@ export function EquipmentDetailPage(props) {
       ${
         deleting
           ? html`<${ConfirmModal}
-              title="Delete equipment"
+              title=${tr('Delete equipment')}
               message=${
-                'Delete "' +
-                eq.name +
-                '"? ' +
+                tr('Delete "{name}"?', { name: eq.name }) +
+                ' ' +
                 (eq.task_count || eq.log_count
-                  ? eq.task_count +
-                    ' task(s) and ' +
-                    eq.log_count +
-                    ' log entr(ies) will be unlinked (their history is kept).'
-                  : 'This cannot be undone.')
+                  ? tr(
+                      '{tasks} task(s) and {logs} log entr(ies) will be unlinked (their history is kept).',
+                      { tasks: eq.task_count, logs: eq.log_count },
+                    )
+                  : tr('This cannot be undone.'))
               }
               onConfirm=${async () => {
                 await deleteEquipment(eq.slug);
-                toast('Equipment deleted.', 'success');
+                toast(tr('Equipment deleted.'), 'success');
                 navigate('/equipment');
               }}
               onClose=${() => setDeleting(false)}

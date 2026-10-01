@@ -3,6 +3,7 @@
  * empty/loading states. Pagination is a sibling component.
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 
 /**
  * @typedef {Object} Column
@@ -63,7 +64,7 @@ export function Table(props) {
       ${
         rows.length === 0
           ? html`<div class=${props.loading ? 'table-loading' : 'table-empty'}>
-              ${props.loading ? 'Loading…' : props.emptyMessage || 'Nothing here yet.'}
+              ${props.loading ? tr('Loading…') : props.emptyMessage || tr('Nothing here yet.')}
             </div>`
           : null
       }

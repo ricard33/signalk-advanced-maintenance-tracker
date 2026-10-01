@@ -5,6 +5,7 @@
  * no dedicated backend.
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useTasks, useLogs, useEquipmentList } from '../api/hooks.js';
 import {
   formatDate,
@@ -49,24 +50,24 @@ export function DashboardPage() {
           href="#/tasks?status=overdue"
         >
           <span class="dash-num">${overdue}</span>
-          <span class="dash-label">Overdue</span>
+          <span class="dash-label">${tr('Overdue')}</span>
         </a>
         <a
           class=${'dash-tile' + (dueSoon > 0 ? ' due_soon' : '')}
           href="#/tasks?status=due_soon"
         >
           <span class="dash-num">${dueSoon}</span>
-          <span class="dash-label">Due soon</span>
+          <span class="dash-label">${tr('Due soon')}</span>
         </a>
         <a class="dash-tile" href="#/equipment">
           <span class="dash-num">${equipmentCount}</span>
-          <span class="dash-label">Equipment</span>
+          <span class="dash-label">${tr('Equipment')}</span>
         </a>
       </div>
 
       <div class="dash-grid">
         <div class="card">
-          <h3>Next up</h3>
+          <h3>${tr('Next up')}</h3>
           ${
             nextUp.length
               ? html`<ul class="dash-list">
@@ -84,12 +85,12 @@ export function DashboardPage() {
                     </li>`,
                   )}
                 </ul>`
-              : html`<p class="dash-empty">Nothing due right now.</p>`
+              : html`<p class="dash-empty">${tr('Nothing due right now.')}</p>`
           }
         </div>
 
         <div class="card">
-          <h3>Recent log</h3>
+          <h3>${tr('Recent log')}</h3>
           ${
             logs.length
               ? html`<ul class="dash-list">
@@ -119,7 +120,7 @@ export function DashboardPage() {
                     </li>`,
                   )}
                 </ul>`
-              : html`<p class="dash-empty">No maintenance logged yet.</p>`
+              : html`<p class="dash-empty">${tr('No maintenance logged yet.')}</p>`
           }
         </div>
       </div>

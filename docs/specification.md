@@ -509,7 +509,8 @@ signals** imported where needed:
   provider); a shared `<Modal/>` primitive handles the overlay/focus-trap.
 
 The shell header contains: app title (links to the dashboard), nav links
-(Home / Tasks / Schedule / Equipment / Log), the theme toggle, and — in the footer — an
+(Home / Tasks / Schedule / Equipment / Log), the language switch (§7.11), the
+theme toggle, and — in the footer — an
 **auth control** (`AuthControl`): a "Log in" link when anonymous, or the
 username + "Log out" when authenticated.
 
@@ -867,6 +868,39 @@ IP with a locally-trusted CA (mkcert) and install that CA on every device;
 otherwise put SignalK behind a reverse proxy with a real certificate. Modern
 Chrome (desktop and Android) needs no service worker for installability once the
 certificate is trusted.
+
+### 7.11 Interface language (i18n)
+
+The webapp speaks **English** (the source language) and **French**. Backend
+texts are out of scope: API error messages stay in English, and the e-mail
+alerts have their own `email.language` option (§10.4).
+
+- `lib/i18n.js` holds a `lang` signal (`'en' | 'fr'`) and `tr(key, params)`.
+  The **English text is the key** — `tr('Log in')` — looked up in the active
+  language's dictionary (`public/app/i18n/fr.js`) and falling back to the key
+  itself, so a missing entry degrades to English. `{name}` placeholders are
+  filled from `params`: `tr('Tasks ({n})', { n: 3 })`. No library, no build
+  step, nothing beyond the Chromium 69 floor (§7.9).
+- Every user-visible string in `public/app` goes through `tr()` with a
+  **literal** first argument (status, unit and stock labels are spelled out in
+  `switch` statements rather than looked up in tables), so
+  `frontend/test/i18n.test.js` can scan the sources and fail on a key missing
+  from `fr.js`, on a stale entry, or on a translation that drops a placeholder.
+  Phrases whose wording depends on the value get one key per case
+  (`'{n} day'` / `'{n} days'`, `'every {n} weeks'` / `'every {n} months'`).
+- `tr()` reads the signal, so components re-render on a language change.
+  `format.js` helpers (durations, "overdue", intervals, status labels) go
+  through it too. Dates stay ISO `YYYY-MM-DD` in both languages.
+- **Initial language**: a persisted choice in `localStorage` (`smt-lang`) is
+  authoritative; otherwise the first of the browser's `navigator.languages`
+  the app speaks; otherwise English.
+- **Switch**: a header button next to the theme toggle shows the current
+  language code (`EN` / `FR`) and flips it; its tooltip is written in the
+  language it switches to. The choice is stored per device and mirrored on
+  `<html lang>`.
+- Not translated: user data (task names, tags, notes), the app title, product
+  names, and the log export (CSV / Markdown / JSON headers stay English so the
+  files keep one stable format).
 
 ---
 

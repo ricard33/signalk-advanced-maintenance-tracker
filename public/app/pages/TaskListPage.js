@@ -3,6 +3,7 @@
  * write affordances render only when logged in (§7.7).
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useState, useEffect } from '../../vendor/preact-hooks.js';
 import { useTasks, useTags, useEquipmentOptions } from '../api/hooks.js';
 import { useAuth } from '../auth/auth.js';
@@ -118,7 +119,7 @@ export function TaskListPage() {
   const columns = [
     {
       key: 'status',
-      label: 'Status',
+      label: tr('Status'),
       sortable: true,
       render: (/** @type {TaskDTO} */ t) =>
         html`<span class="status-badges"
@@ -127,7 +128,7 @@ export function TaskListPage() {
     },
     {
       key: 'name',
-      label: 'Name',
+      label: tr('Name'),
       sortable: true,
       className: 'col-name',
       render: (/** @type {TaskDTO} */ t) =>
@@ -135,7 +136,7 @@ export function TaskListPage() {
     },
     {
       key: 'equipment',
-      label: 'Equipment',
+      label: tr('Equipment'),
       className: 'hide-sm cell-equipment',
       render: (/** @type {TaskDTO} */ t) =>
         t.equipment_slug
@@ -146,7 +147,7 @@ export function TaskListPage() {
     },
     {
       key: 'tags',
-      label: 'Tags',
+      label: tr('Tags'),
       className: 'hide-sm cell-tags',
       render: (/** @type {TaskDTO} */ t) =>
         t.tags.length
@@ -157,7 +158,7 @@ export function TaskListPage() {
     },
     {
       key: 'remaining_runtime',
-      label: 'Runtime Left',
+      label: tr('Runtime Left'),
       sortable: true,
       className: 'num hide-sm',
       render: (/** @type {TaskDTO} */ t) =>
@@ -167,7 +168,7 @@ export function TaskListPage() {
     },
     {
       key: 'remaining_time',
-      label: 'Time left',
+      label: tr('Time left'),
       sortable: true,
       className: 'num hide-sm',
       render: (/** @type {TaskDTO} */ t) =>
@@ -186,8 +187,8 @@ export function TaskListPage() {
                 <button
                   type="button"
                   class="btn-icon success"
-                  aria-label=${'Complete ' + t.name}
-                  title="Mark complete"
+                  aria-label=${tr('Complete {name}', { name: t.name })}
+                  title=${tr('Mark complete')}
                   onClick=${() => setCompleting(t)}
                 >
                   <i class="bi bi-check2-circle" />
@@ -242,8 +243,8 @@ export function TaskListPage() {
           <i class="bi bi-search" />
           <input
             class="input"
-            placeholder="Search tasks…"
-            aria-label="Search tasks"
+            placeholder=${tr('Search tasks…')}
+            aria-label=${tr('Search tasks')}
             value=${searchText}
             onInput=${(/** @type {any} */ e) => setSearchText(e.currentTarget.value)}
           />
@@ -259,7 +260,7 @@ export function TaskListPage() {
                     setEditorTask(null);
                   }}
                 >
-                  <i class="bi bi-plus-lg" />New Task
+                  <i class="bi bi-plus-lg" />${tr('New Task')}
                 </button>
                 <button
                   type="button"
@@ -269,7 +270,7 @@ export function TaskListPage() {
                     setEditorTask(null);
                   }}
                 >
-                  <i class="bi bi-plus-lg" />New Todo
+                  <i class="bi bi-plus-lg" />${tr('New Todo')}
                 </button>
               `
             : null
@@ -290,7 +291,7 @@ export function TaskListPage() {
                   aria-labelledby="equipment-filter-label"
                 >
                   <span class="chips-label" id="equipment-filter-label">
-                    EQUIPMENT:
+                    ${tr('EQUIPMENT:')}
                   </span>
                   ${equipmentList.map(
                     (
@@ -315,7 +316,7 @@ export function TaskListPage() {
           tagList.length
             ? html`
                 <div class="chips" role="group" aria-labelledby="tag-filter-label">
-                  <span class="chips-label" id="tag-filter-label">TAGS:</span>
+                  <span class="chips-label" id="tag-filter-label">${tr('TAGS:')}</span>
                   ${tagList.map(
                     (tag) => html`
                       <button
@@ -334,7 +335,7 @@ export function TaskListPage() {
             : null
         }
         <div class="chips" role="group" aria-labelledby="status-filter-label">
-          <span class="chips-label" id="status-filter-label">STATUS:</span>
+          <span class="chips-label" id="status-filter-label">${tr('STATUS:')}</span>
           ${STATUSES.map(
             (status) => html`
               <button
@@ -354,7 +355,7 @@ export function TaskListPage() {
       ${
         tasksRes.error && !pageData
           ? html`<div class="error-box">
-              Failed to load tasks: ${tasksRes.error.message}
+              ${tr('Failed to load tasks: {error}', { error: tasksRes.error.message })}
             </div>`
           : html`
               <${Table}
@@ -364,7 +365,7 @@ export function TaskListPage() {
                 order=${order}
                 onSort=${onSort}
                 loading=${tasksRes.loading}
-                emptyMessage=${search || tagsCsv || equipmentSlug || statusCsv ? 'No tasks match your filters.' : 'No maintenance tasks yet.'}
+                emptyMessage=${search || tagsCsv || equipmentSlug || statusCsv ? tr('No tasks match your filters.') : tr('No maintenance tasks yet.')}
               />
               ${
                 pageData

@@ -4,6 +4,7 @@
  * loginModalOpen signal.
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useState } from '../../vendor/preact-hooks.js';
 import { Modal } from './Modal.js';
 import { FormError } from './FormError.js';
@@ -30,20 +31,20 @@ function LoginForm() {
     try {
       await login(username, password, rememberMe);
       closeLoginModal();
-      toast('Logged in as ' + username, 'success');
+      toast(tr('Logged in as {name}', { name: username }), 'success');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : tr('Login failed'));
     } finally {
       setBusy(false);
     }
   };
 
   return html`
-    <${Modal} title="Log in" narrow onClose=${closeLoginModal}>
+    <${Modal} title=${tr('Log in')} narrow onClose=${closeLoginModal}>
       <form onSubmit=${onSubmit}>
         <${FormError} message=${error} />
         <div class="field">
-          <label class="field-label" for="login-username">Username</label>
+          <label class="field-label" for="login-username">${tr('Username')}</label>
           <input
             id="login-username"
             class="input"
@@ -53,7 +54,7 @@ function LoginForm() {
           />
         </div>
         <div class="field">
-          <label class="field-label" for="login-password">Password</label>
+          <label class="field-label" for="login-password">${tr('Password')}</label>
           <input
             id="login-password"
             class="input"
@@ -71,7 +72,7 @@ function LoginForm() {
               checked=${rememberMe}
               onInput=${(/** @type {any} */ e) => setRememberMe(e.currentTarget.checked)}
             />
-            ${' '}Remember me
+            ${' '}${tr('Remember me')}
           </label>
         </div>
         <button
@@ -79,7 +80,7 @@ function LoginForm() {
           class="btn btn-primary"
           disabled=${busy || !username}
         >
-          ${busy ? 'Logging in…' : 'Log in'}
+          ${busy ? tr('Logging in…') : tr('Log in')}
         </button>
       </form>
     <//>

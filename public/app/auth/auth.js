@@ -4,6 +4,7 @@
  * session cookie, so there is no token handling here.
  */
 import { signal } from '../../vendor/signals.js';
+import { tr } from '../lib/i18n.js';
 import { toast } from '../lib/toasts.js';
 import { invalidateAll } from '../api/resource.js';
 
@@ -75,8 +76,8 @@ export async function login(username, password, rememberMe) {
   if (!res.ok) {
     throw new Error(
       res.status === 401
-        ? 'Invalid username or password'
-        : 'Login failed (' + res.status + ')',
+        ? tr('Invalid username or password')
+        : tr('Login failed ({status})', { status: res.status }),
     );
   }
   /** @type {{ token?: string, timeToLive?: number }|null} */
@@ -137,7 +138,7 @@ export function onUnauthorized() {
   authState.value = { checked: true, isLoggedIn: false, username: null };
   if (unauthorizedNotified || loginModalOpen.value) return;
   unauthorizedNotified = true;
-  toast('Please log in to load maintenance data.', 'error');
+  toast(tr('Please log in to load maintenance data.'), 'error');
   openLoginModal();
 }
 

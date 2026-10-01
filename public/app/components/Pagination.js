@@ -1,4 +1,5 @@
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 
 /**
  * @param {{ page: number, pageSize: number, total: number, onPage: (page: number) => void }} props
@@ -10,11 +11,13 @@ export function Pagination(props) {
   const last = Math.min(props.total, props.page * props.pageSize);
   return html`
     <div class="pagination">
-      <span>${first}–${last} of ${props.total}</span>
+      <span
+        >${tr('{first}–{last} of {total}', { first: first, last: last, total: props.total })}</span
+      >
       <button
         type="button"
         class="btn-icon"
-        aria-label="Previous page"
+        aria-label=${tr('Previous page')}
         disabled=${props.page <= 1}
         onClick=${() => props.onPage(props.page - 1)}
       >
@@ -24,7 +27,7 @@ export function Pagination(props) {
       <button
         type="button"
         class="btn-icon"
-        aria-label="Next page"
+        aria-label=${tr('Next page')}
         disabled=${props.page >= pages}
         onClick=${() => props.onPage(props.page + 1)}
       >

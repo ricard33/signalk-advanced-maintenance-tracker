@@ -1,5 +1,5 @@
 /**
- * App root (§7.2): install the router, sync the theme, establish the auth
+ * App root (§7.2): install the router, sync the theme and language, establish the auth
  * session, and mount <App/> into #app.
  *
  * Importing the vendored @preact/signals integrates signal reads with Preact
@@ -10,10 +10,12 @@ import { html } from './lib/html.js';
 import { App } from './app.js';
 import { initRouter } from './lib/router.js';
 import { applyTheme } from './lib/theme.js';
+import { applyLang } from './lib/i18n.js';
 import { refreshLoginStatus } from './auth/auth.js';
 
 initRouter();
 applyTheme();
+applyLang();
 refreshLoginStatus();
 
 const root = document.getElementById('app');

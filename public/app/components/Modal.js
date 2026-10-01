@@ -3,6 +3,7 @@
  * role="dialog". Every modal in the app builds on this.
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useEffect, useRef } from '../../vendor/preact-hooks.js';
 
 const FOCUSABLE =
@@ -75,7 +76,7 @@ export function Modal(props) {
           <button
             type="button"
             class="btn-icon"
-            aria-label="Close"
+            aria-label=${tr('Close')}
             onClick=${props.onClose}
           >
             <i class="bi bi-x-lg" />

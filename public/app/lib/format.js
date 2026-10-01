@@ -3,6 +3,7 @@
  * backend (§6.2); day.js here is for parsing/formatting only.
  */
 import dayjs from '../../vendor/dayjs/index.js';
+import { tr } from './i18n.js';
 
 const MS_PER_HOUR = 3600 * 1000;
 const MS_PER_DAY = 24 * MS_PER_HOUR;
@@ -32,7 +33,7 @@ export function formatHours(hours) {
  */
 export function formatRemainingHours(hours) {
   if (hours === null || hours === undefined) return '—';
-  if (hours < 0) return formatHours(-hours) + ' overdue';
+  if (hours < 0) return tr('{span} overdue', { span: formatHours(-hours) });
   return formatHours(hours);
 }
 
@@ -43,13 +44,17 @@ export function formatRemainingHours(hours) {
 export function humanizeMs(ms) {
   if (ms >= MS_PER_DAY) {
     const days = Math.round(ms / MS_PER_DAY);
-    return days + (days === 1 ? ' day' : ' days');
+    return days === 1
+      ? tr('{n} day', { n: days })
+      : tr('{n} days', { n: days });
   }
   if (ms >= MS_PER_HOUR) {
     const hours = Math.round(ms / MS_PER_HOUR);
-    return hours + (hours === 1 ? ' hour' : ' hours');
+    return hours === 1
+      ? tr('{n} hour', { n: hours })
+      : tr('{n} hours', { n: hours });
   }
-  return '< 1 hour';
+  return tr('< 1 hour');
 }
 
 /**
@@ -58,7 +63,7 @@ export function humanizeMs(ms) {
  */
 export function formatRemainingTime(ms) {
   if (ms === null || ms === undefined) return '—';
-  if (ms < 0) return humanizeMs(-ms) + ' overdue';
+  if (ms < 0) return tr('{span} overdue', { span: humanizeMs(-ms) });
   return humanizeMs(ms);
 }
 
@@ -69,7 +74,7 @@ export function formatRemainingTime(ms) {
  */
 export function formatElapsedTime(ms) {
   if (ms === null || ms === undefined) return '—';
-  return ms < 0 ? 'in ' + humanizeMs(-ms) : humanizeMs(ms);
+  return ms < 0 ? tr('in {span}', { span: humanizeMs(-ms) }) : humanizeMs(ms);
 }
 
 /**
@@ -135,19 +140,73 @@ export const STATUSES = [
 ];
 
 /**
- * Status → human label, cased like the stock badges ("Low stock").
- * @type {Record<string, string>}
+ * Status → human label, cased like the stock badges ("Low stock"). Each label
+ * is a literal `tr()` call so the i18n key check can see it.
+ * @param {string} status
  */
-const STATUS_LABELS = {
-  overdue: 'Overdue',
-  due_soon: 'Due Soon',
-  todo: 'Todo',
-  ok: 'OK',
-  pending: 'Pending',
-  archived: 'Archived',
-};
-
-/** @param {string} status */
 export function statusLabel(status) {
-  return STATUS_LABELS[status] || status;
+  switch (status) {
+    case 'overdue':
+      return tr('Overdue');
+    case 'due_soon':
+      return tr('Due Soon');
+    case 'todo':
+      return tr('Todo');
+    case 'ok':
+      return tr('OK');
+    case 'pending':
+      return tr('Pending');
+    case 'archived':
+      return tr('Archived');
+    default:
+      return status;
+  }
+}
+
+/**
+ * A calendar unit as shown in the task form's unit picker.
+ * @param {string} unit
+ */
+export function timeUnitLabel(unit) {
+  switch (unit) {
+    case 'days':
+      return tr('days');
+    case 'weeks':
+      return tr('weeks');
+    case 'months':
+      return tr('months');
+    case 'years':
+      return tr('years');
+    default:
+      return unit;
+  }
+}
+
+/**
+ * Calendar interval: "every 12 months". One phrase per unit, because the
+ * wording around the number depends on the unit in other languages.
+ * @param {number|null} count
+ * @param {string|null} unit
+ */
+export function formatTimeInterval(count, unit) {
+  switch (unit) {
+    case 'days':
+      return tr('every {n} days', { n: count });
+    case 'weeks':
+      return tr('every {n} weeks', { n: count });
+    case 'months':
+      return tr('every {n} months', { n: count });
+    case 'years':
+      return tr('every {n} years', { n: count });
+    default:
+      return String(count) + ' ' + String(unit);
+  }
+}
+
+/**
+ * Runtime interval: "every 200 h".
+ * @param {number|null} hours
+ */
+export function formatRuntimeInterval(hours) {
+  return tr('every {hours}', { hours: formatHours(hours) });
 }

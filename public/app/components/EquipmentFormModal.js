@@ -5,6 +5,7 @@
  * instrument, safety gear) that is maintained or repaired.
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useState } from '../../vendor/preact-hooks.js';
 import { Modal } from './Modal.js';
 import { FormError } from './FormError.js';
@@ -67,7 +68,7 @@ export function EquipmentFormModal(props) {
     e.preventDefault();
     setError('');
     if (!name.trim()) {
-      setError('Name is required.');
+      setError(tr('Name is required.'));
       return;
     }
     /** @type {EquipmentInput} */
@@ -84,7 +85,7 @@ export function EquipmentFormModal(props) {
     if (purchasePrice.trim() !== '') {
       const price = Number(purchasePrice);
       if (!isFinite(price) || price < 0) {
-        setError('Purchase price must be a non-negative number.');
+        setError(tr('Purchase price must be a non-negative number.'));
         return;
       }
       input.purchase_price = price;
@@ -103,18 +104,21 @@ export function EquipmentFormModal(props) {
         isEdit && eq
           ? await updateEquipment(eq.slug, input)
           : await createEquipment(input);
-      toast(isEdit ? 'Equipment updated.' : 'Equipment added.', 'success');
+      toast(
+        isEdit ? tr('Equipment updated.') : tr('Equipment added.'),
+        'success',
+      );
       if (props.onSaved) props.onSaved(saved);
       props.onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : tr('Save failed'));
       setBusy(false);
     }
   };
 
   const footer = html`
     <button type="button" class="btn" onClick=${props.onClose} disabled=${busy}>
-      Cancel
+      ${tr('Cancel')}
     </button>
     <button
       type="submit"
@@ -122,13 +126,13 @@ export function EquipmentFormModal(props) {
       class="btn btn-primary"
       disabled=${busy}
     >
-      ${busy ? 'Saving…' : isEdit ? 'Save changes' : 'Add equipment'}
+      ${busy ? tr('Saving…') : isEdit ? tr('Save changes') : tr('Add equipment')}
     </button>
   `;
 
   return html`
     <${Modal}
-      title=${isEdit ? 'Edit equipment' : 'New equipment'}
+      title=${isEdit ? tr('Edit equipment') : tr('New equipment')}
       onClose=${props.onClose}
       footer=${footer}
     >
@@ -136,7 +140,7 @@ export function EquipmentFormModal(props) {
         <${FormError} message=${error} />
 
         <div class="field">
-          <label class="field-label" for="equipment-name">Name</label>
+          <label class="field-label" for="equipment-name">${tr('Name')}</label>
           <input
             id="equipment-name"
             class="input"
@@ -146,7 +150,7 @@ export function EquipmentFormModal(props) {
         </div>
 
         <div class="field">
-          <label class="field-label" for="equipment-slug">Slug</label>
+          <label class="field-label" for="equipment-slug">${tr('Slug')}</label>
           <input
             id="equipment-slug"
             class="input slug-preview"
@@ -159,29 +163,28 @@ export function EquipmentFormModal(props) {
           ${
             slugChanged
               ? html`<div class="field-hint">
-                  <i class="bi bi-exclamation-triangle" /> Changing the slug
-                  breaks existing deep links to this equipment.
+                  <i class="bi bi-exclamation-triangle" /> ${tr('Changing the slug breaks existing deep links to this equipment.')}
                 </div>`
-              : html`<div class="field-hint">Used in the equipment's URL.</div>`
+              : html`<div class="field-hint">${tr("Used in the equipment's URL.")}</div>`
           }
         </div>
 
         <div class="field">
           <label class="field-label" for="equipment-description">
-            Description (markdown)${' '}
+            ${tr('Description (markdown)')}${' '}
             <button
               type="button"
               class="btn-link"
               onClick=${() => setPreview(!preview)}
             >
-              ${preview ? 'edit' : 'preview'}
+              ${preview ? tr('edit') : tr('preview')}
             </button>
           </label>
           ${
             preview
               ? html`<div class="card">
                   <${MarkdownView}
-                    markdown=${description || '_Nothing to preview._'}
+                    markdown=${description || tr('_Nothing to preview._')}
                   />
                 </div>`
               : html`<textarea
@@ -195,7 +198,7 @@ export function EquipmentFormModal(props) {
 
         <div class="field-row">
           <div class="field">
-            <label class="field-label" for="equipment-brand">Brand</label>
+            <label class="field-label" for="equipment-brand">${tr('Brand')}</label>
             <input
               id="equipment-brand"
               class="input"
@@ -204,7 +207,7 @@ export function EquipmentFormModal(props) {
             />
           </div>
           <div class="field">
-            <label class="field-label" for="equipment-model">Model</label>
+            <label class="field-label" for="equipment-model">${tr('Model')}</label>
             <input
               id="equipment-model"
               class="input"
@@ -215,7 +218,7 @@ export function EquipmentFormModal(props) {
         </div>
 
         <div class="field">
-          <label class="field-label" for="equipment-serial">Serial number</label>
+          <label class="field-label" for="equipment-serial">${tr('Serial number')}</label>
           <input
             id="equipment-serial"
             class="input"
@@ -227,7 +230,7 @@ export function EquipmentFormModal(props) {
         <div class="field-row">
           <div class="field">
             <label class="field-label" for="equipment-purchase-date">
-              Purchase date
+              ${tr('Purchase date')}
             </label>
             <input
               id="equipment-purchase-date"
@@ -239,7 +242,7 @@ export function EquipmentFormModal(props) {
           </div>
           <div class="field">
             <label class="field-label" for="equipment-price">
-              Purchase price
+              ${tr('Purchase price')}
             </label>
             <input
               id="equipment-price"
@@ -255,7 +258,7 @@ export function EquipmentFormModal(props) {
 
         <div class="field">
           <label class="field-label" for="equipment-warranty">
-            Warranty until
+            ${tr('Warranty until')}
           </label>
           <input
             id="equipment-warranty"
@@ -267,7 +270,7 @@ export function EquipmentFormModal(props) {
         </div>
 
         <div class="field">
-          <label class="field-label">Tags</label>
+          <label class="field-label">${tr('Tags')}</label>
           <${TagInput}
             value=${tags}
             onChange=${setTags}

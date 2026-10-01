@@ -4,6 +4,7 @@
  * 401/403 into the auth layer.
  */
 import { onUnauthorized } from '../auth/auth.js';
+import { tr } from '../lib/i18n.js';
 
 export const API_BASE = '/plugins/signalk-advanced-maintenance-tracker/api';
 
@@ -51,7 +52,8 @@ export async function apiFetch(path, options) {
     throw new ApiError(
       res.status,
       errInfo.code || 'http_' + res.status,
-      errInfo.message || 'Request failed (' + res.status + ')',
+      errInfo.message ||
+        tr('Request failed ({status})', { status: res.status }),
     );
   }
   return body;

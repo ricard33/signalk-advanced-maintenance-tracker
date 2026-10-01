@@ -6,9 +6,14 @@
  * dedicated backend.
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useState, useRef } from '../../vendor/preact-hooks.js';
 import { useTaskPages } from '../api/hooks.js';
-import { formatDate, formatHours } from '../lib/format.js';
+import {
+  formatDate,
+  formatRuntimeInterval,
+  formatTimeInterval,
+} from '../lib/format.js';
 import { StatusBadge } from '../components/StatusBadge.js';
 
 /** @typedef {import('../types.js').TaskDTO} TaskDTO */
@@ -21,7 +26,7 @@ import { StatusBadge } from '../components/StatusBadge.js';
  */
 
 /** The API's page-size ceiling (MAX_PAGE_SIZE in src/service.ts). */
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 200;
 
 /**
  * Case-insensitive name order; the immutable id breaks ties so equal names
@@ -96,11 +101,11 @@ export function SchedulePage() {
 
   if (tasksRes.error && !page) {
     return html`<div class="error-box">
-      Failed to load the schedule: ${tasksRes.error.message}
+      ${tr('Failed to load the schedule: {error}', { error: tasksRes.error.message })}
     </div>`;
   }
   if (!page) {
-    return html`<div class="table-loading">Loading…</div>`;
+    return html`<div class="table-loading">${tr('Loading…')}</div>`;
   }
 
   const groups = groupSchedule(page.data);
@@ -110,17 +115,17 @@ export function SchedulePage() {
   return html`
     <div>
       <div class="page-header">
-        <h1 class="page-title">Maintenance schedule</h1>
+        <h1 class="page-title">${tr('Maintenance schedule')}</h1>
       </div>
       <div class="table-wrap">
         <table class="table schedule-table">
           <thead>
             <tr>
-              <th>Task</th>
-              <th class="num">Runtime interval</th>
-              <th class="num">Time interval</th>
-              <th>Status</th>
-              <th class="num">Last done</th>
+              <th>${tr('Task')}</th>
+              <th class="num">${tr('Runtime interval')}</th>
+              <th class="num">${tr('Time interval')}</th>
+              <th>${tr('Status')}</th>
+              <th class="num">${tr('Last done')}</th>
             </tr>
           </thead>
           <tbody>
@@ -134,7 +139,7 @@ export function SchedulePage() {
                             href=${'#/equipment/' + encodeURIComponent(g.slug)}
                             >${g.name}</a
                           >`
-                        : 'No equipment'
+                        : tr('No equipment')
                     }
                   </th>
                 </tr>
@@ -148,23 +153,23 @@ export function SchedulePage() {
                     <td class="num">
                       ${
                         t.runtime_interval !== null
-                          ? 'every ' + formatHours(t.runtime_interval)
+                          ? formatRuntimeInterval(t.runtime_interval)
                           : '—'
                       }
                     </td>
                     <td class="num">
                       ${
                         t.time_interval !== null
-                          ? 'every ' +
-                            t.time_interval +
-                            ' ' +
-                            t.time_interval_unit
+                          ? formatTimeInterval(
+                              t.time_interval,
+                              t.time_interval_unit,
+                            )
                           : '—'
                       }
                     </td>
                     <td><${StatusBadge} status=${t.status} /></td>
                     <td class="num">
-                      ${t.last_maintenance ? formatDate(t.last_maintenance) : 'never'}
+                      ${t.last_maintenance ? formatDate(t.last_maintenance) : tr('never')}
                     </td>
                   </tr>`,
                 )}
@@ -174,7 +179,7 @@ export function SchedulePage() {
         </table>
         ${
           groups.length === 0
-            ? html`<div class="table-empty">No recurring tasks yet.</div>`
+            ? html`<div class="table-empty">${tr('No recurring tasks yet.')}</div>`
             : null
         }
       </div>
@@ -182,7 +187,7 @@ export function SchedulePage() {
         remaining > 0
           ? html`<div class="load-more">
               <span class="muted"
-                >Showing ${page.data.length} of ${' ' + page.total} tasks.</span
+                >${tr('Showing {shown} of {total} tasks.', { shown: page.data.length, total: page.total })}</span
               >
               <button
                 type="button"
@@ -190,7 +195,7 @@ export function SchedulePage() {
                 disabled=${loadingMore}
                 onClick=${() => setPageCount(pageCount + 1)}
               >
-                ${loadingMore ? 'Loading…' : 'Load more tasks'}
+                ${loadingMore ? tr('Loading…') : tr('Load more tasks')}
               </button>
             </div>`
           : null

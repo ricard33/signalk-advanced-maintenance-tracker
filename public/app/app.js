@@ -3,10 +3,12 @@
  * (plugin links, auth control), toaster, and the globally-mounted login modal.
  */
 import { html } from './lib/html.js';
+import { tr } from './lib/i18n.js';
 import { route, matchPath } from './lib/router.js';
 import { useHealth } from './api/hooks.js';
 import { Toaster } from './components/Toaster.js';
 import { ThemeToggle } from './components/ThemeToggle.js';
+import { LangToggle } from './components/LangToggle.js';
 import { AuthControl } from './components/AuthControl.js';
 import { LoginModal } from './components/LoginModal.js';
 import { DashboardPage } from './pages/DashboardPage.js';
@@ -57,30 +59,33 @@ export function App() {
           <a
             class=${'nav-link' + (current.path === '/' ? ' active' : '')}
             href="#/"
-            >Home</a
+            >${tr('Home')}</a
           >
           <a
             class=${'nav-link' + (onTasks ? ' active' : '')}
             href="#/tasks"
-            >Tasks</a
+            >${tr('Tasks')}</a
           >
           <a
             class=${'nav-link' + (current.path === '/schedule' ? ' active' : '')}
             href="#/schedule"
-            >Schedule</a
+            >${tr('Schedule')}</a
           >
           <a
             class=${'nav-link' + (onEquipment ? ' active' : '')}
             href="#/equipment"
-            >Equipment</a
+            >${tr('Equipment')}</a
           >
           <a
             class=${'nav-link' + (current.path === '/log' ? ' active' : '')}
             href="#/log"
-            >Log</a
+            >${tr('Log')}</a
           >
         </nav>
-        <${ThemeToggle} />
+        <div class="shell-tools">
+          <${LangToggle} />
+          <${ThemeToggle} />
+        </div>
       </header>
       <main class="shell-main">${page}</main>
       <footer class="shell-footer">

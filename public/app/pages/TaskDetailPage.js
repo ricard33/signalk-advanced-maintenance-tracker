@@ -3,6 +3,7 @@
  * status, per-task log with edit/delete, and the complete/edit/delete modals.
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useState } from '../../vendor/preact-hooks.js';
 import {
   useTask,
@@ -15,6 +16,8 @@ import { useAuth } from '../auth/auth.js';
 import {
   formatDate,
   formatElapsedTime,
+  formatTimeInterval,
+  formatRuntimeInterval,
   formatHours,
   formatRemainingHours,
   formatRemainingTime,
@@ -60,24 +63,24 @@ export function TaskDetailPage(props) {
 
   if (taskRes.error && !task) {
     return html`<div class="error-box">
-      Failed to load task: ${taskRes.error.message}
+      ${tr('Failed to load task: {error}', { error: taskRes.error.message })}
     </div>`;
   }
   if (!task) {
-    return html`<div class="table-loading">Loading…</div>`;
+    return html`<div class="table-loading">${tr('Loading…')}</div>`;
   }
 
   /** @type {import('../components/Table.js').Column[]} */
   const logColumns = [
     {
       key: 'maintenance_date',
-      label: 'Date',
+      label: tr('Date'),
       className: 'num',
       render: (/** @type {LogDTO} */ e) => formatDate(e.maintenance_date),
     },
     {
       key: 'tags',
-      label: 'Tags',
+      label: tr('Tags'),
       className: 'cell-tags',
       render: (/** @type {LogDTO} */ e) =>
         e.tags && e.tags.length
@@ -88,13 +91,13 @@ export function TaskDetailPage(props) {
     },
     {
       key: 'runtime_hours',
-      label: 'Runtime',
+      label: tr('Runtime'),
       className: 'num',
       render: (/** @type {LogDTO} */ e) => formatHours(e.runtime_hours),
     },
     {
       key: 'logged_by',
-      label: 'By',
+      label: tr('By'),
       render: (/** @type {LogDTO} */ e) =>
         e.logged_by
           ? formatUser(e.logged_by)
@@ -110,8 +113,8 @@ export function TaskDetailPage(props) {
         <button
           type="button"
           class="btn-icon primary"
-          aria-label="Edit log entry"
-          title="Edit"
+          aria-label=${tr('Edit log entry')}
+          title=${tr('Edit')}
           onClick=${() => setEditingEntry(e)}
         >
           <i class="bi bi-pencil" />
@@ -119,8 +122,8 @@ export function TaskDetailPage(props) {
         <button
           type="button"
           class="btn-icon danger"
-          aria-label="Delete log entry"
-          title="Delete"
+          aria-label=${tr('Delete log entry')}
+          title=${tr('Delete')}
           onClick=${() => setDeletingEntry(e)}
         >
           <i class="bi bi-trash" />
@@ -177,8 +180,10 @@ export function TaskDetailPage(props) {
       : html`<div class="field-hint">
           ${
             value === 0
-              ? 'No due-soon warning.'
-              : 'Warns ' + value + unit + ' early.'
+              ? tr('No due-soon warning.')
+              : unit === 'd'
+                ? tr('Warns {n}d early.', { n: value })
+                : tr('Warns {n}h early.', { n: value })
           }
         </div>`;
 
@@ -205,14 +210,14 @@ export function TaskDetailPage(props) {
                     class="btn btn-success"
                     onClick=${() => setCompleting(true)}
                   >
-                    <i class="bi bi-check2-circle" />Mark complete
+                    <i class="bi bi-check2-circle" />${tr('Mark complete')}
                   </button>
                   <button
                     type="button"
                     class="btn btn-primary"
                     onClick=${() => setEditing(true)}
                   >
-                    <i class="bi bi-pencil" />Edit
+                    <i class="bi bi-pencil" />${tr('Edit')}
                   </button>
                   <button
                     type="button"
@@ -223,20 +228,20 @@ export function TaskDetailPage(props) {
                       });
                       toast(
                         task.is_archived
-                          ? 'Task unarchived.'
-                          : 'Task archived.',
+                          ? tr('Task unarchived.')
+                          : tr('Task archived.'),
                         'success',
                       );
                     }}
                   >
-                    <i class="bi bi-archive" />${task.is_archived ? 'Unarchive' : 'Archive'}
+                    <i class="bi bi-archive" />${task.is_archived ? tr('Unarchive') : tr('Archive')}
                   </button>
                   <button
                     type="button"
                     class="btn btn-danger"
                     onClick=${() => setDeletingTask(true)}
                   >
-                    <i class="bi bi-trash" />Delete
+                    <i class="bi bi-trash" />${tr('Delete')}
                   </button>
                 </span>
               `
@@ -247,7 +252,7 @@ export function TaskDetailPage(props) {
       ${
         task.equipment_slug
           ? html`<p class="detail-subhead">
-              Equipment:${' '}
+              ${tr('Equipment:')}${' '}
               <a href=${'#/equipment/' + encodeURIComponent(task.equipment_slug)}
                 >${task.equipment_name}</a
               >
@@ -262,7 +267,7 @@ export function TaskDetailPage(props) {
             ? html`<div class="card">
                 ${
                   task.description
-                    ? html`<h3>Description</h3>
+                    ? html`<h3>${tr('Description')}</h3>
                         <${MarkdownView} markdown=${task.description} />`
                     : null
                 }
@@ -271,7 +276,7 @@ export function TaskDetailPage(props) {
                     ? html`<div
                         style=${task.description ? 'margin-top:16px' : ''}
                       >
-                        <h3>Consumables</h3>
+                        <h3>${tr('Consumables')}</h3>
                         <ul class="consumables-list">
                           ${consumables.map(
                             (c) => html`<li
@@ -297,54 +302,54 @@ export function TaskDetailPage(props) {
         }
 
         <div class="card">
-          <h3>Schedule</h3>
+          <h3>${tr('Schedule')}</h3>
           ${
             !hasSchedule
               ? html`<p class="muted" style="margin:0">
-                  No interval or due date configured.
+                  ${tr('No interval or due date configured.')}
                 </p>`
               : html`
                   <${StatTable}
                     rows=${[
                       {
-                        label: 'Interval',
+                        label: tr('Interval'),
                         value: timeConfigured
-                          ? 'every ' +
-                            task.time_interval +
-                            ' ' +
-                            task.time_interval_unit
+                          ? formatTimeInterval(
+                              task.time_interval,
+                              task.time_interval_unit,
+                            )
                           : null,
                       },
                       {
                         // Only when a recurring interval owns the Next row —
                         // on its own the deadline *is* the next thing due.
-                        label: 'Deadline',
+                        label: tr('Deadline'),
                         value: bothTimeDimensions
                           ? formatDate(task.due_date)
                           : null,
                       },
-                      { label: 'Today', value: toDateInput() },
+                      { label: tr('Today'), value: toDateInput() },
                       {
-                        label: 'Last',
+                        label: tr('Last'),
                         value:
                           task.last_maintenance !== null
                             ? formatDate(task.last_maintenance)
                             : null,
                       },
                       {
-                        label: 'Elapsed',
+                        label: tr('Elapsed'),
                         value:
                           task.elapsed_time_ms !== null
                             ? formatElapsedTime(task.elapsed_time_ms)
                             : null,
                       },
                       {
-                        label: 'Next',
+                        label: tr('Next'),
                         value:
                           nextDueIso !== null ? formatDate(nextDueIso) : null,
                       },
                       {
-                        label: 'Remaining',
+                        label: tr('Remaining'),
                         value:
                           task.remaining_time_ms !== null
                             ? remaining(
@@ -370,45 +375,45 @@ export function TaskDetailPage(props) {
           hasRuntime
             ? html`
                 <div class="card">
-                  <h3>Runtime</h3>
+                  <h3>${tr('Runtime')}</h3>
                   <${StatTable}
                     rows=${[
                       {
-                        label: 'Interval',
+                        label: tr('Interval'),
                         value: runtimeConfigured
-                          ? 'every ' + formatHours(task.runtime_interval)
+                          ? formatRuntimeInterval(task.runtime_interval)
                           : null,
                       },
                       {
-                        label: 'Current',
+                        label: tr('Current'),
                         value:
                           task.current_runtime !== null
                             ? formatHours(task.current_runtime)
                             : null,
                       },
                       {
-                        label: 'Last',
+                        label: tr('Last'),
                         value:
                           task.last_runtime !== null
                             ? formatHours(task.last_runtime)
                             : null,
                       },
                       {
-                        label: 'Elapsed',
+                        label: tr('Elapsed'),
                         value:
                           task.elapsed_runtime !== null
                             ? formatHours(task.elapsed_runtime)
                             : null,
                       },
                       {
-                        label: 'Next',
+                        label: tr('Next'),
                         value:
                           task.due_runtime_at !== null
                             ? formatHours(task.due_runtime_at)
                             : null,
                       },
                       {
-                        label: 'Remaining',
+                        label: tr('Remaining'),
                         value:
                           task.remaining_runtime !== null
                             ? remaining(
@@ -431,7 +436,7 @@ export function TaskDetailPage(props) {
       </div>
 
       <div class="page-header" style="margin-top:24px">
-        <h2 class="page-title" style="font-size:17px">Maintenance log</h2>
+        <h2 class="page-title" style="font-size:17px">${tr('Maintenance log')}</h2>
         ${
           logsRes.data && logsRes.data.data.length
             ? html`<span class="page-actions">
@@ -440,7 +445,7 @@ export function TaskDetailPage(props) {
                   class="btn btn-primary"
                   onClick=${() => setDownloadingLog(true)}
                 >
-                  <i class="bi bi-download" />Download log
+                  <i class="bi bi-download" />${tr('Download log')}
                 </button>
               </span>`
             : null
@@ -458,7 +463,7 @@ export function TaskDetailPage(props) {
               </div>`
             : null}
         loading=${logsRes.loading}
-        emptyMessage="No maintenance logged yet."
+        emptyMessage=${tr('No maintenance logged yet.')}
       />
 
       ${
@@ -476,7 +481,7 @@ export function TaskDetailPage(props) {
       ${
         downloadingLog
           ? html`<${DownloadLogModal}
-              title=${'Download log — ' + task.name}
+              title=${tr('Download log — {name}', { name: task.name })}
               filenameBase=${'signalk-maintenance-log-' + task.slug}
               fetchEntries=${async () => {
                 const res = await apiFetch(
@@ -493,11 +498,11 @@ export function TaskDetailPage(props) {
       ${
         deletingTask
           ? html`<${ConfirmModal}
-              title="Delete task"
-              message=${'Delete "' + task.name + '" and its entire maintenance log? This cannot be undone.'}
+              title=${tr('Delete task')}
+              message=${tr('Delete "{name}" and its entire maintenance log? This cannot be undone.', { name: task.name })}
               onConfirm=${async () => {
                 await deleteTask(task.slug);
-                toast('Task deleted.', 'success');
+                toast(tr('Task deleted.'), 'success');
                 navigate('/');
               }}
               onClose=${() => setDeletingTask(false)}
@@ -507,11 +512,11 @@ export function TaskDetailPage(props) {
       ${
         deletingEntry
           ? html`<${ConfirmModal}
-              title="Delete log entry"
-              message="Delete this log entry? The task's last-maintenance data will be recomputed."
+              title=${tr('Delete log entry')}
+              message=${tr("Delete this log entry? The task's last-maintenance data will be recomputed.")}
               onConfirm=${async () => {
                 await deleteLog(deletingEntry.id, task.slug);
-                toast('Log entry deleted.', 'success');
+                toast(tr('Log entry deleted.'), 'success');
                 setDeletingEntry(null);
               }}
               onClose=${() => setDeletingEntry(null)}

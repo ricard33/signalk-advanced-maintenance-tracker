@@ -5,6 +5,7 @@
  * editor, so read-only sessions never pay the cost.
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useState } from '../../vendor/preact-hooks.js';
 import { useSignalKPaths } from '../api/signalkPaths.js';
 
@@ -27,7 +28,7 @@ export function PathPicker(props) {
     <div class="combo">
       <input
         class="input"
-        placeholder="e.g. propulsion.port.runTime"
+        placeholder=${tr('e.g. propulsion.port.runTime')}
         value=${value}
         onInput=${(/** @type {any} */ e) => {
           props.onChange(e.currentTarget.value);
@@ -57,7 +58,7 @@ export function PathPicker(props) {
       ${
         paths.error
           ? html`<div class="field-hint">
-              Could not load paths from SignalK — free text still works.
+              ${tr('Could not load paths from SignalK — free text still works.')}
             </div>`
           : null
       }

@@ -6,6 +6,7 @@
  * plugin /tasks API, never from SignalK directly (§8.4).
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useState } from '../../vendor/preact-hooks.js';
 import { Modal } from './Modal.js';
 import { FormError } from './FormError.js';
@@ -130,11 +131,11 @@ export function LogEntryModal(props) {
     e.preventDefault();
     setError('');
     if (isStandalone && !title.trim()) {
-      setError('Title is required.');
+      setError(tr('Title is required.'));
       return;
     }
     if (!date) {
-      setError('Maintenance date is required.');
+      setError(tr('Maintenance date is required.'));
       return;
     }
     if (hasConsumables && consumeStock) {
@@ -143,9 +144,10 @@ export function LogEntryModal(props) {
       );
       if (incomplete) {
         setError(
-          'Pick a location for all of the ' +
-            incomplete.consumable.item_name +
-            ' used before marking this complete.',
+          tr(
+            'Pick a location for all of the {name} used before marking this complete.',
+            { name: incomplete.consumable.item_name },
+          ),
         );
         return;
       }
@@ -162,7 +164,7 @@ export function LogEntryModal(props) {
     if (runtime.trim() !== '') {
       const hours = Number(runtime);
       if (!isFinite(hours) || hours < 0) {
-        setError('Runtime hours must be a non-negative number.');
+        setError(tr('Runtime hours must be a non-negative number.'));
         return;
       }
       input.runtime_hours = hours;
@@ -171,7 +173,7 @@ export function LogEntryModal(props) {
     try {
       if (isEdit && entry) {
         await updateLog(entry.id, input);
-        toast('Log entry updated.', 'success');
+        toast(tr('Log entry updated.'), 'success');
       } else if (task) {
         if (hasConsumables) {
           input.consume_stock = consumeStock;
@@ -185,31 +187,32 @@ export function LogEntryModal(props) {
         const created = await addLog(task.slug, input);
         toast(
           isTodo
-            ? 'Completed "' + task.name + '" — moved to archive.'
-            : 'Marked "' + task.name + '" complete.',
+            ? tr('Completed "{name}" — moved to archive.', { name: task.name })
+            : tr('Marked "{name}" complete.', { name: task.name }),
           'success',
         );
         if (created.consumable_warnings && created.consumable_warnings.length) {
           toast(
-            'Stock not fully updated: ' +
-              created.consumable_warnings.join('; '),
+            tr('Stock not fully updated: {details}', {
+              details: created.consumable_warnings.join('; '),
+            }),
             'error',
           );
         }
       } else {
         await addStandaloneLog(input);
-        toast('Log entry added.', 'success');
+        toast(tr('Log entry added.'), 'success');
       }
       props.onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : tr('Save failed'));
       setBusy(false);
     }
   };
 
   const footer = html`
     <button type="button" class="btn" onClick=${props.onClose} disabled=${busy}>
-      Cancel
+      ${tr('Cancel')}
     </button>
     <button
       type="submit"
@@ -219,21 +222,21 @@ export function LogEntryModal(props) {
     >
       ${
         busy
-          ? 'Saving…'
+          ? tr('Saving…')
           : isEdit
-            ? 'Save changes'
+            ? tr('Save changes')
             : task
-              ? 'Mark complete'
-              : 'Add entry'
+              ? tr('Mark complete')
+              : tr('Add entry')
       }
     </button>
   `;
 
   const modalTitle = isEdit
-    ? 'Edit log entry'
+    ? tr('Edit log entry')
     : task
-      ? 'Mark complete — ' + task.name
-      : 'New log entry';
+      ? tr('Mark complete — {name}', { name: task.name })
+      : tr('New log entry');
 
   return html`
     <${Modal} title=${modalTitle} onClose=${props.onClose} footer=${footer}>
@@ -242,15 +245,14 @@ export function LogEntryModal(props) {
         ${
           isStandalone && !isEdit
             ? html`<p class="field-hint" style="margin:0 0 12px">
-                For quick log entries not tied to any task. For better
-                record-keeping, use${' '}
-                <strong>Mark complete</strong> on an existing task.
+                ${tr('For quick log entries not tied to any task. For better record-keeping, use')}${' '}
+                <strong>${tr('Mark complete')}</strong>${' '}${tr('on an existing task.')}
               </p>`
             : null
         }
 
         <div class="field">
-          <label class="field-label" for="log-date">Maintenance date</label>
+          <label class="field-label" for="log-date">${tr('Maintenance date')}</label>
           <input
             id="log-date"
             class="input"
@@ -263,7 +265,7 @@ export function LogEntryModal(props) {
         ${
           isStandalone
             ? html`<div class="field">
-                <label class="field-label" for="log-title">Title</label>
+                <label class="field-label" for="log-title">${tr('Title')}</label>
                 <input
                   id="log-title"
                   class="input"
@@ -281,7 +283,7 @@ export function LogEntryModal(props) {
           !isStandalone && !isTodo
             ? html`<div class="field">
                 <label class="field-label" for="log-runtime">
-                  Runtime hours
+                  ${tr('Runtime hours')}
                 </label>
                 <input
                   id="log-runtime"
@@ -297,7 +299,7 @@ export function LogEntryModal(props) {
         }
 
         <div class="field">
-          <label class="field-label" for="log-equipment">Equipment</label>
+          <label class="field-label" for="log-equipment">${tr('Equipment')}</label>
           <${EquipmentSelect}
             id="log-equipment"
             value=${equipmentId}
@@ -306,7 +308,7 @@ export function LogEntryModal(props) {
         </div>
 
         <div class="field">
-          <label class="field-label">Tags</label>
+          <label class="field-label">${tr('Tags')}</label>
           <${TagInput}
             value=${tags}
             onChange=${setTags}
@@ -315,7 +317,7 @@ export function LogEntryModal(props) {
         </div>
 
         <div class="field">
-          <label class="field-label" for="log-notes">Notes (markdown)</label>
+          <label class="field-label" for="log-notes">${tr('Notes (markdown)')}</label>
           <textarea
             id="log-notes"
             class="textarea"
@@ -335,8 +337,7 @@ export function LogEntryModal(props) {
                     onInput=${(/** @type {any} */ e) =>
                       setConsumeStock(e.currentTarget.checked)}
                   />
-                  ${' '}Update signalk-stowage-mgmt stock for this task's
-                  linked parts
+                  ${' '}${tr("Update signalk-stowage-mgmt stock for this task's linked parts")}
                 </label>
               </div>`
             : null

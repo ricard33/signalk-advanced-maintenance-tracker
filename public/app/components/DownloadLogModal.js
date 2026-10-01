@@ -5,6 +5,7 @@
  * filename base.
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useState } from '../../vendor/preact-hooks.js';
 import { Modal } from './Modal.js';
 import { FormError } from './FormError.js';
@@ -45,14 +46,14 @@ export function DownloadLogModal(props) {
       triggerDownload(content, filename, fmt.mime);
       props.onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Download failed');
+      setError(err instanceof Error ? err.message : tr('Download failed'));
       setBusy(false);
     }
   };
 
   const footer = html`
     <button type="button" class="btn" onClick=${props.onClose} disabled=${busy}>
-      Cancel
+      ${tr('Cancel')}
     </button>
     <button
       type="submit"
@@ -60,13 +61,13 @@ export function DownloadLogModal(props) {
       class="btn btn-primary"
       disabled=${busy}
     >
-      <i class="bi bi-download" />${busy ? 'Preparing…' : 'Download'}
+      <i class="bi bi-download" />${busy ? tr('Preparing…') : tr('Download')}
     </button>
   `;
 
   return html`
     <${Modal}
-      title=${props.title || 'Download log'}
+      title=${props.title || tr('Download log')}
       onClose=${props.onClose}
       footer=${footer}
       narrow=${true}
@@ -74,7 +75,7 @@ export function DownloadLogModal(props) {
       <form id="download-log-form" onSubmit=${onSubmit}>
         <${FormError} message=${error} />
         <div class="field">
-          <span class="field-label">Format</span>
+          <span class="field-label">${tr('Format')}</span>
           <div class="radio-group">
             ${EXPORT_FORMATS.map(
               (f) => html`<label key=${f.value} class="radio-option">

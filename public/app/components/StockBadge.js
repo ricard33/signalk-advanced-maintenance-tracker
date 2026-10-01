@@ -11,6 +11,7 @@
  * failure-handling decision).
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useEffect, useRef } from '../../vendor/preact-hooks.js';
 import {
   useStowageItems,
@@ -19,7 +20,12 @@ import {
 } from '../api/stowage.js';
 import { toast } from '../lib/toasts.js';
 
-const LABELS = { out: 'Out of stock', low: 'Low stock', ok: 'In stock' };
+/** @param {'out'|'low'|'ok'} status */
+function stockLabel(status) {
+  if (status === 'out') return tr('Out of stock');
+  if (status === 'low') return tr('Low stock');
+  return tr('In stock');
+}
 
 /** @param {{ consumables: import('../types.js').TaskConsumableDTO[] }} props */
 export function StockBadge(props) {
@@ -36,7 +42,10 @@ export function StockBadge(props) {
       lastToasted.current !== err
     ) {
       lastToasted.current = err;
-      toast('Could not check stowage-mgmt stock levels for a task.', 'error');
+      toast(
+        tr('Could not check stowage-mgmt stock levels for a task.'),
+        'error',
+      );
     }
   }, [itemsRes.error, consumables.length]);
 
@@ -46,7 +55,7 @@ export function StockBadge(props) {
 
   return html`<span
     class=${'badge ' + status}
-    title="Stock status for this task's linked parts"
-    >${LABELS[status]}</span
+    title=${tr("Stock status for this task's linked parts")}
+    >${stockLabel(status)}</span
   >`;
 }

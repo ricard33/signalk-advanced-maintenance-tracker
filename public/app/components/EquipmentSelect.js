@@ -3,6 +3,7 @@
  * (§5.9). `value` is the equipment id as a string; '' means "none".
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useEquipmentOptions } from '../api/hooks.js';
 
 /** @typedef {import('../types.js').EquipmentDTO} EquipmentDTO */
@@ -20,7 +21,7 @@ export function EquipmentSelect(props) {
       value=${props.value}
       onInput=${(/** @type {any} */ e) => props.onChange(e.currentTarget.value)}
     >
-      <option value="">— None —</option>
+      <option value="">${tr('— None —')}</option>
       ${list.map(
         (/** @type {EquipmentDTO} */ eq) => html`
           <option key=${eq.id} value=${String(eq.id)}>${eq.name}</option>

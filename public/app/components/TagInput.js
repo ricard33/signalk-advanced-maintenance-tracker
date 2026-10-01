@@ -3,6 +3,7 @@
  * a text input that adds on Enter/comma, and suggestions from GET /tags.
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useState } from '../../vendor/preact-hooks.js';
 
 /**
@@ -61,7 +62,7 @@ export function TagInput(props) {
                     key=${tag}
                     class="chip selected"
                     onClick=${() => remove(tag)}
-                    title="Remove tag"
+                    title=${tr('Remove tag')}
                   >
                     ${tag}<i class="bi bi-x" />
                   </button>
@@ -73,7 +74,7 @@ export function TagInput(props) {
       <div class="combo">
         <input
           class="input"
-          placeholder="Add tag and press Enter"
+          placeholder=${tr('Add tag and press Enter')}
           value=${text}
           onInput=${(/** @type {any} */ e) => {
             setText(e.currentTarget.value);

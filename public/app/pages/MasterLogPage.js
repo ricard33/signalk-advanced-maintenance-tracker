@@ -5,6 +5,7 @@
  * in — creating standalone entries and editing/deleting any entry.
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useState, useEffect } from '../../vendor/preact-hooks.js';
 import { useLogs, deleteLog } from '../api/hooks.js';
 import { apiFetch, buildQuery } from '../api/client.js';
@@ -108,7 +109,7 @@ export function MasterLogPage() {
   const columns = [
     {
       key: 'task',
-      label: 'Task',
+      label: tr('Task'),
       sortable: true,
       // Standalone entries have no task to link to — their title stands in.
       render: (/** @type {LogDTO} */ e) =>
@@ -120,14 +121,14 @@ export function MasterLogPage() {
     },
     {
       key: 'maintenance_date',
-      label: 'Date',
+      label: tr('Date'),
       sortable: true,
       className: 'num',
       render: (/** @type {LogDTO} */ e) => formatDate(e.maintenance_date),
     },
     {
       key: 'equipment',
-      label: 'Equipment',
+      label: tr('Equipment'),
       className: 'cell-equipment',
       render: (/** @type {LogDTO} */ e) =>
         e.equipment_slug
@@ -138,7 +139,7 @@ export function MasterLogPage() {
     },
     {
       key: 'tags',
-      label: 'Tags',
+      label: tr('Tags'),
       className: 'cell-tags',
       render: (/** @type {LogDTO} */ e) =>
         e.tags && e.tags.length
@@ -149,14 +150,14 @@ export function MasterLogPage() {
     },
     {
       key: 'runtime_hours',
-      label: 'Runtime',
+      label: tr('Runtime'),
       sortable: true,
       className: 'num',
       render: (/** @type {LogDTO} */ e) => formatHours(e.runtime_hours),
     },
     {
       key: 'logged_by',
-      label: 'By',
+      label: tr('By'),
       render: (/** @type {LogDTO} */ e) =>
         e.logged_by
           ? formatUser(e.logged_by)
@@ -172,8 +173,8 @@ export function MasterLogPage() {
         <button
           type="button"
           class="btn-icon primary"
-          aria-label="Edit log entry"
-          title="Edit"
+          aria-label=${tr('Edit log entry')}
+          title=${tr('Edit')}
           onClick=${() => setEditingEntry(e)}
         >
           <i class="bi bi-pencil" />
@@ -181,8 +182,8 @@ export function MasterLogPage() {
         <button
           type="button"
           class="btn-icon danger"
-          aria-label="Delete log entry"
-          title="Delete"
+          aria-label=${tr('Delete log entry')}
+          title=${tr('Delete')}
           onClick=${() => setDeletingEntry(e)}
         >
           <i class="bi bi-trash" />
@@ -206,7 +207,7 @@ export function MasterLogPage() {
                     class="btn-link"
                     onClick=${() => toggleExpanded(e.id)}
                   >
-                    less
+                    ${tr('less')}
                   </button>`
                 : null
             }
@@ -218,7 +219,7 @@ export function MasterLogPage() {
               class="btn-link"
               onClick=${() => toggleExpanded(e.id)}
             >
-              more
+              ${tr('more')}
             </button>
           `;
     return html`<div class="log-notes">
@@ -235,8 +236,8 @@ export function MasterLogPage() {
           <i class="bi bi-search" />
           <input
             class="input"
-            placeholder="Search log…"
-            aria-label="Search log"
+            placeholder=${tr('Search log…')}
+            aria-label=${tr('Search log')}
             value=${searchText}
             onInput=${(/** @type {any} */ e) => setSearchText(e.currentTarget.value)}
           />
@@ -249,7 +250,7 @@ export function MasterLogPage() {
                   class="btn btn-success toolbar-action"
                   onClick=${() => setCreating(true)}
                 >
-                  <i class="bi bi-plus-lg" />New Entry
+                  <i class="bi bi-plus-lg" />${tr('New Entry')}
                 </button>
               `
             : null
@@ -259,14 +260,14 @@ export function MasterLogPage() {
           class="btn btn-primary toolbar-action"
           onClick=${() => setShowDownload(true)}
         >
-          <i class="bi bi-download" />Download Log
+          <i class="bi bi-download" />${tr('Download Log')}
         </button>
       </div>
 
       ${
         showDownload
           ? html`<${DownloadLogModal}
-              title="Download maintenance log"
+              title=${tr('Download maintenance log')}
               filenameBase="signalk-maintenance-log"
               fetchEntries=${fetchAllLogs}
               onClose=${() => setShowDownload(false)}
@@ -278,18 +279,20 @@ export function MasterLogPage() {
       ${
         deletingEntry
           ? html`<${ConfirmModal}
-              title="Delete log entry"
+              title=${tr('Delete log entry')}
               message=${
                 deletingEntry.task_id !== null
-                  ? "Delete this log entry? The task's last-maintenance data will be recomputed."
-                  : 'Delete this log entry? This cannot be undone.'
+                  ? tr(
+                      "Delete this log entry? The task's last-maintenance data will be recomputed.",
+                    )
+                  : tr('Delete this log entry? This cannot be undone.')
               }
               onConfirm=${async () => {
                 await deleteLog(
                   deletingEntry.id,
                   deletingEntry.task_slug || undefined,
                 );
-                toast('Log entry deleted.', 'success');
+                toast(tr('Log entry deleted.'), 'success');
                 setDeletingEntry(null);
               }}
               onClose=${() => setDeletingEntry(null)}
@@ -300,7 +303,7 @@ export function MasterLogPage() {
       ${
         logsRes.error && !pageData
           ? html`<div class="error-box">
-              Failed to load log: ${logsRes.error.message}
+              ${tr('Failed to load log: {error}', { error: logsRes.error.message })}
             </div>`
           : html`
               <${Table}
@@ -311,7 +314,7 @@ export function MasterLogPage() {
                 order=${order}
                 onSort=${onSort}
                 loading=${logsRes.loading}
-                emptyMessage=${search ? 'No log entries match your search.' : 'No maintenance logged yet.'}
+                emptyMessage=${search ? tr('No log entries match your search.') : tr('No maintenance logged yet.')}
               />
               ${
                 pageData

@@ -1,4 +1,5 @@
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useState } from '../../vendor/preact-hooks.js';
 import { Modal } from './Modal.js';
 import { FormError } from './FormError.js';
@@ -23,14 +24,14 @@ export function ConfirmModal(props) {
     try {
       await props.onConfirm();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Operation failed');
+      setError(err instanceof Error ? err.message : tr('Operation failed'));
       setBusy(false);
     }
   };
 
   const footer = html`
     <button type="button" class="btn" onClick=${props.onClose} disabled=${busy}>
-      Cancel
+      ${tr('Cancel')}
     </button>
     <button
       type="button"
@@ -38,7 +39,7 @@ export function ConfirmModal(props) {
       onClick=${confirm}
       disabled=${busy}
     >
-      ${busy ? 'Working…' : props.confirmLabel || 'Delete'}
+      ${busy ? tr('Working…') : props.confirmLabel || tr('Delete')}
     </button>
   `;
 

@@ -3,6 +3,7 @@
  * "Log out" when authenticated.
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useAuth } from '../auth/auth.js';
 
 export function AuthControl() {
@@ -10,13 +11,13 @@ export function AuthControl() {
   if (!auth.isLoggedIn) {
     return html`
       <button type="button" class="btn-link" onClick=${auth.openLoginModal}>
-        Log in
+        ${tr('Log in')}
       </button>
     `;
   }
   return html`
     <button type="button" class="btn-link" onClick=${() => auth.logout()}>
-      Log out
+      ${tr('Log out')}
     </button>
   `;
 }

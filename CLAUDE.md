@@ -78,6 +78,11 @@ MFDs) — no optional chaining in `public/`, check `frontend/tsconfig.json` lib 
 - `public/app/main.js` → `app.js` is the shell; `lib/router.js` is a hash router with a
   `route` signal; state is `@preact/signals`, markup is `htm` tagged templates (`html\`\``).
 - `pages/` (TaskListPage, TaskDetailPage, MasterLogPage), `components/`, `lib/` helpers.
+- **i18n (spec §7.11):** the UI is English + French. Wrap every user-visible string in
+  `tr('English text', { params })` from `lib/i18n.js` — the English text is the key, and
+  the first argument must be a string literal. Add the French entry to
+  `public/app/i18n/fr.js`; `frontend/test/i18n.test.js` fails on missing or stale keys.
+  Don't name a variable `tr`; task rows are conventionally `t`.
 - `api/client.js` — `apiFetch()` wraps the plugin REST API, sends the session cookie,
   routes 401/403 into `auth/auth.js`.
 - The frontend never talks to SignalK for domain/runtime data — only two read-only

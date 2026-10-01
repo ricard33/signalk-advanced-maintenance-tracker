@@ -4,6 +4,7 @@
  * logged in (§7.7).
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useState, useEffect } from '../../vendor/preact-hooks.js';
 import { useEquipmentList, useTags, deleteEquipment } from '../api/hooks.js';
 import { useAuth } from '../auth/auth.js';
@@ -76,7 +77,7 @@ export function EquipmentListPage() {
   const columns = [
     {
       key: 'name',
-      label: 'Name',
+      label: tr('Name'),
       sortable: true,
       className: 'col-name',
       render: (/** @type {EquipmentDTO} */ e) =>
@@ -86,7 +87,7 @@ export function EquipmentListPage() {
     },
     {
       key: 'tags',
-      label: 'Tags',
+      label: tr('Tags'),
       className: 'cell-tags',
       render: (/** @type {EquipmentDTO} */ e) =>
         e.tags.length
@@ -97,27 +98,27 @@ export function EquipmentListPage() {
     },
     {
       key: 'brand',
-      label: 'Brand',
+      label: tr('Brand'),
       className: 'hide-sm',
       render: (/** @type {EquipmentDTO} */ e) =>
         e.brand || html`<span class="muted">—</span>`,
     },
     {
       key: 'model',
-      label: 'Model',
+      label: tr('Model'),
       className: 'hide-sm',
       render: (/** @type {EquipmentDTO} */ e) =>
         e.model || html`<span class="muted">—</span>`,
     },
     {
       key: 'task_count',
-      label: 'Tasks',
+      label: tr('Tasks'),
       className: 'num hide-sm',
       render: (/** @type {EquipmentDTO} */ e) => e.task_count,
     },
     {
       key: 'log_count',
-      label: 'Log',
+      label: tr('Log'),
       className: 'num hide-sm',
       render: (/** @type {EquipmentDTO} */ e) => e.log_count,
     },
@@ -131,8 +132,8 @@ export function EquipmentListPage() {
         <button
           type="button"
           class="btn-icon primary"
-          aria-label=${'Edit ' + e.name}
-          title="Edit"
+          aria-label=${tr('Edit {name}', { name: e.name })}
+          title=${tr('Edit')}
           onClick=${() => setEditor(e)}
         >
           <i class="bi bi-pencil" />
@@ -140,8 +141,8 @@ export function EquipmentListPage() {
         <button
           type="button"
           class="btn-icon danger"
-          aria-label=${'Delete ' + e.name}
-          title="Delete"
+          aria-label=${tr('Delete {name}', { name: e.name })}
+          title=${tr('Delete')}
           onClick=${() => setDeleting(e)}
         >
           <i class="bi bi-trash" />
@@ -169,8 +170,8 @@ export function EquipmentListPage() {
           <i class="bi bi-search" />
           <input
             class="input"
-            placeholder="Search equipment…"
-            aria-label="Search equipment"
+            placeholder=${tr('Search equipment…')}
+            aria-label=${tr('Search equipment')}
             value=${searchText}
             onInput=${(/** @type {any} */ e) => setSearchText(e.currentTarget.value)}
           />
@@ -183,7 +184,7 @@ export function EquipmentListPage() {
                   class="btn btn-success toolbar-action"
                   onClick=${() => setEditor(null)}
                 >
-                  <i class="bi bi-plus-lg" />New Equipment
+                  <i class="bi bi-plus-lg" />${tr('New Equipment')}
                 </button>
               `
             : null
@@ -198,7 +199,7 @@ export function EquipmentListPage() {
               onClearAll=${clearFilters}
             >
               <div class="chips" role="group" aria-labelledby="eq-tag-filter-label">
-                <span class="chips-label" id="eq-tag-filter-label">TAGS:</span>
+                <span class="chips-label" id="eq-tag-filter-label">${tr('TAGS:')}</span>
                 ${tagList.map(
                   (tag) => html`
                     <button
@@ -220,7 +221,7 @@ export function EquipmentListPage() {
       ${
         listRes.error && !pageData
           ? html`<div class="error-box">
-              Failed to load equipment: ${listRes.error.message}
+              ${tr('Failed to load equipment: {error}', { error: listRes.error.message })}
             </div>`
           : html`
               <${Table}
@@ -230,7 +231,7 @@ export function EquipmentListPage() {
                 order=${order}
                 onSort=${onSort}
                 loading=${listRes.loading}
-                emptyMessage=${search || tagsCsv ? 'No equipment matches your filters.' : 'No equipment yet.'}
+                emptyMessage=${search || tagsCsv ? tr('No equipment matches your filters.') : tr('No equipment yet.')}
               />
               ${
                 pageData
@@ -256,21 +257,20 @@ export function EquipmentListPage() {
       ${
         deleting
           ? html`<${ConfirmModal}
-              title="Delete equipment"
+              title=${tr('Delete equipment')}
               message=${
-                'Delete "' +
-                deleting.name +
-                '"? ' +
+                tr('Delete "{name}"?', { name: deleting.name }) +
+                ' ' +
                 (deleting.task_count || deleting.log_count
-                  ? deleting.task_count +
-                    ' task(s) and ' +
-                    deleting.log_count +
-                    ' log entr(ies) will be unlinked (their history is kept).'
-                  : 'This cannot be undone.')
+                  ? tr(
+                      '{tasks} task(s) and {logs} log entr(ies) will be unlinked (their history is kept).',
+                      { tasks: deleting.task_count, logs: deleting.log_count },
+                    )
+                  : tr('This cannot be undone.'))
               }
               onConfirm=${async () => {
                 await deleteEquipment(deleting.slug);
-                toast('Equipment deleted.', 'success');
+                toast(tr('Equipment deleted.'), 'success');
                 setDeleting(null);
               }}
               onClose=${() => setDeleting(null)}

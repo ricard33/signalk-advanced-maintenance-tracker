@@ -8,6 +8,7 @@
  * chip rows render exactly as before.
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useState } from '../../vendor/preact-hooks.js';
 
 /**
@@ -31,7 +32,7 @@ export function FilterBar(props) {
         aria-expanded=${open}
         onClick=${() => setOpen(!open)}
       >
-        <i class="bi bi-funnel" />Filters${count ? ' (' + count + ')' : ''}
+        <i class="bi bi-funnel" />${tr('Filters')}${count ? ' (' + count + ')' : ''}
       </button>
       ${
         !open && count
@@ -51,7 +52,7 @@ export function FilterBar(props) {
                 class="btn-link"
                 onClick=${props.onClearAll}
               >
-                Clear all
+                ${tr('Clear all')}
               </button>
             </div>`
           : null

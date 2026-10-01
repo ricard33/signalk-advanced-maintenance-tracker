@@ -9,6 +9,7 @@
  * live dependency), but adding new ones needs the live item list.
  */
 import { html } from '../lib/html.js';
+import { tr } from '../lib/i18n.js';
 import { useState } from '../../vendor/preact-hooks.js';
 import { useStowageItems, StowageUnavailableError } from '../api/stowage.js';
 
@@ -80,7 +81,7 @@ export function ConsumablesPicker(props) {
                       type="number"
                       min="0"
                       step="any"
-                      aria-label=${'Quantity per service for ' + c.item_name}
+                      aria-label=${tr('Quantity per service for {name}', { name: c.item_name })}
                       value=${String(c.qty_per_service)}
                       onInput=${(/** @type {any} */ e) =>
                         setQty(c.item_id, e.currentTarget.value)}
@@ -88,8 +89,8 @@ export function ConsumablesPicker(props) {
                     <button
                       type="button"
                       class="btn-icon danger"
-                      aria-label=${'Remove ' + c.item_name}
-                      title="Remove"
+                      aria-label=${tr('Remove {name}', { name: c.item_name })}
+                      title=${tr('Remove')}
                       onClick=${() => remove(c.item_id)}
                     >
                       <i class="bi bi-x" />
@@ -103,14 +104,12 @@ export function ConsumablesPicker(props) {
       ${
         unavailable
           ? html`<div class="field-hint">
-              Could not reach signalk-stowage-mgmt — existing parts above can
-              still be edited or removed, but new ones can't be added right
-              now.
+              ${tr("Could not reach signalk-stowage-mgmt — existing parts above can still be edited or removed, but new ones can't be added right now.")}
             </div>`
           : html`<div class="combo">
               <input
                 class="input"
-                placeholder="Search stowage-mgmt items to add"
+                placeholder=${tr('Search stowage-mgmt items to add')}
                 value=${text}
                 onInput=${(/** @type {any} */ e) => {
                   setText(e.currentTarget.value);
