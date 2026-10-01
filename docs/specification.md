@@ -483,7 +483,7 @@ as authored (no build output).
   under the plugin mount without any server-side SPA fallback — everything after
   the `#` is client-side only and never hits the server (e.g.
   `/signalk-advanced-maintenance-tracker/#/tasks/oil-change`). `#/` is the dashboard
-  (§7.4), `#/tasks` the task list. SignalK serves the app at
+  (§7.4), `#/tasks` the task list, `#/schedule` the maintenance schedule. SignalK serves the app at
   both `/signalk-advanced-maintenance-tracker/` and `/signalk-advanced-maintenance-tracker/index.html`,
   which is all a hash router requires. Implemented with `preact-router` in hash mode
   (or a small hand-rolled `hashchange` router). History/path-based routing would
@@ -509,7 +509,7 @@ signals** imported where needed:
   provider); a shared `<Modal/>` primitive handles the overlay/focus-trap.
 
 The shell header contains: app title (links to the dashboard), nav links
-(Home / Tasks / Equipment / Log), the theme toggle, and — in the footer — an
+(Home / Tasks / Schedule / Equipment / Log), the theme toggle, and — in the footer — an
 **auth control** (`AuthControl`): a "Log in" link when anonymous, or the
 username + "Log out" when authenticated.
 
@@ -605,6 +605,25 @@ drives the attribute.
 - A "Mark complete" button opening the Complete modal.
 - A per-task log table (date, tags, runtime, logged_by) with edit/delete
   actions on each entry.
+
+**Schedule (`/schedule`)** — the general maintenance programme, read-only.
+
+- One table of every **recurring**, non-archived task (one-off todos are left
+  out), **grouped by equipment**: a heading row per equipment (a link to its
+  detail page), then its tasks. Tasks linked to no equipment form a final
+  "No equipment" group.
+- Columns: task name (link), runtime interval ("every 200 h"), time interval
+  ("every 12 months"), status badge, date of last maintenance ("never" when
+  the task has no log entry yet). An unset interval shows "—".
+- The order is **constant**: equipment alphabetically, then tasks
+  alphabetically (case-insensitive, ties broken by id) — never by status, so
+  the page reads the same on every visit. No search, sort or paging controls.
+- Composes `GET /tasks?sort=name&pageSize=200` (the API's page-size ceiling),
+  grouping client-side; no dedicated endpoint. When more tasks exist than are
+  loaded, a "Showing n of total tasks" note and a **Load more tasks** button
+  sit under the table; each click fetches one more page and merges it into the
+  displayed list (the tasks are regrouped and re-sorted as a whole). All loaded
+  pages are refetched together by the 5 s polling.
 
 **Master Log (`/log`)**
 

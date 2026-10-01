@@ -32,5 +32,16 @@ describe('App routing (§7.1)', () => {
     expect(screen.getByRole('link', { name: 'Tasks' }).className).toContain(
       'active',
     );
+
+    route.value = parseHash('#/schedule');
+    rerender(html`<${App} />`);
+    await waitFor(() =>
+      expect(
+        screen.getByRole('heading', { name: 'Maintenance schedule' }),
+      ).toBeTruthy(),
+    );
+    expect(screen.getByRole('link', { name: 'Schedule' }).className).toContain(
+      'active',
+    );
   });
 });

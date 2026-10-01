@@ -13,6 +13,7 @@ import { DashboardPage } from './pages/DashboardPage.js';
 import { TaskListPage } from './pages/TaskListPage.js';
 import { TaskDetailPage } from './pages/TaskDetailPage.js';
 import { MasterLogPage } from './pages/MasterLogPage.js';
+import { SchedulePage } from './pages/SchedulePage.js';
 import { EquipmentListPage } from './pages/EquipmentListPage.js';
 import { EquipmentDetailPage } from './pages/EquipmentDetailPage.js';
 
@@ -38,6 +39,8 @@ export function App() {
     />`;
   } else if (current.path === '/equipment') {
     page = html`<${EquipmentListPage} />`;
+  } else if (current.path === '/schedule') {
+    page = html`<${SchedulePage} />`;
   } else if (current.path === '/log') {
     page = html`<${MasterLogPage} />`;
   } else if (current.path === '/tasks') {
@@ -60,6 +63,11 @@ export function App() {
             class=${'nav-link' + (onTasks ? ' active' : '')}
             href="#/tasks"
             >Tasks</a
+          >
+          <a
+            class=${'nav-link' + (current.path === '/schedule' ? ' active' : '')}
+            href="#/schedule"
+            >Schedule</a
           >
           <a
             class=${'nav-link' + (onEquipment ? ' active' : '')}

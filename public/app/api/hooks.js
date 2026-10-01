@@ -34,6 +34,51 @@ export function useTasks(params) {
 }
 
 /**
+ * The first `pageCount` pages of a task list as one merged page, for views
+ * that grow with a "load more" button. All pages are refetched together on
+ * each poll, so the merged list stays live; a task that slips across a page
+ * boundary between two requests is kept once.
+ * @param {Record<string, string|number|undefined|null>} params must set `pageSize`
+ * @param {number} pageCount
+ * @returns {import('./resource.js').ResourceState<import('../types.js').Page<TaskDTO>>}
+ */
+export function useTaskPages(params, pageCount) {
+  const key = 'tasks' + buildQuery(params) + '&pages=' + pageCount;
+  return useResource(
+    key,
+    () => {
+      const requests = [];
+      for (let page = 1; page <= pageCount; page++) {
+        requests.push(
+          apiFetch('/tasks' + buildQuery(Object.assign({}, params, { page }))),
+        );
+      }
+      return Promise.all(requests).then((pages) => {
+        /** @type {Record<string, boolean>} */
+        const seen = {};
+        /** @type {TaskDTO[]} */
+        const data = [];
+        pages.forEach((p) => {
+          p.data.forEach((/** @type {TaskDTO} */ t) => {
+            if (seen[t.id]) return;
+            seen[t.id] = true;
+            data.push(t);
+          });
+        });
+        const last = pages[pages.length - 1];
+        return {
+          data: data,
+          total: last.total,
+          page: 1,
+          pageSize: last.pageSize * pages.length,
+        };
+      });
+    },
+    { refetchInterval: POLL_MS },
+  );
+}
+
+/**
  * @param {string} slug
  * @returns {import('./resource.js').ResourceState<TaskDTO>}
  */

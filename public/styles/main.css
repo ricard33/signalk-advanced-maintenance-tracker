@@ -703,6 +703,22 @@ pre {
   font-size: 15px;
 }
 
+/* schedule page: an equipment heading row above its tasks */
+.table tr.group-row th {
+  background: var(--bg-inset);
+  font-size: 15px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.load-more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+  margin-top: 12px;
+}
+
 /* full-width detail row (log notes) rendered under its entry row */
 .table tr.has-detail td {
   border-bottom: none;
