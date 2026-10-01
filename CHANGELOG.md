@@ -1,3 +1,11 @@
+# v1.9.1
+
+A fuller "Next up" list on the dashboard.
+
+- The dashboard's **Next up** list now shows up to 10 tasks — overdue first,
+  then due soon. It previously stopped at 6 (3 of each), however many were
+  waiting.
+
 # v1.9.0
 
 The whole maintenance programme on one page, and the webapp in French.
