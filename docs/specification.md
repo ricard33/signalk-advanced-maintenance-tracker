@@ -538,10 +538,11 @@ drives the attribute.
   **# due-soon tasks** (→ `/tasks?status=due_soon`), **# equipment** (→
   `/equipment`). The overdue / due-soon numbers take the `--danger` / `--warn`
   colour only when non-zero.
-- **Next up** — the next few tasks to do: up to 3 tasks in `overdue` or
-  `due_soon` status (overdue first), each a link to its detail page with its
-  status badge and time left. "Nothing due right now." when there are none.
-- **Recent log** — the 3 most recent log entries; task-linked entries link to
+- **Next up** — the next tasks to do: up to 10 tasks in `overdue` or
+  `due_soon` status (overdue first; due-soon tasks fill whatever room the
+  overdue ones leave), each a link to its detail page with its status badge and
+  time left. "Nothing due right now." when there are none.
+- **Recent log** — the 10 most recent log entries; task-linked entries link to
   the task, standalone entries render as plain text (as in the master log).
 - Composes existing list endpoints (`GET /tasks?status=…`, `GET /equipment`,
   `GET /logs` with `pageSize`), no dedicated endpoint; live-updating via the 5 s

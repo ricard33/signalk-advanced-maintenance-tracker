@@ -28,8 +28,8 @@ function remainingText(t) {
 }
 
 export function DashboardPage() {
-  const overdueRes = useTasks({ status: 'overdue', pageSize: 3 });
-  const dueSoonRes = useTasks({ status: 'due_soon', pageSize: 3 });
+  const overdueRes = useTasks({ status: 'overdue', pageSize: 10 });
+  const dueSoonRes = useTasks({ status: 'due_soon', pageSize: 10 });
   const equipmentRes = useEquipmentList({ pageSize: 1 });
   const logsRes = useLogs({ pageSize: 10 });
 
