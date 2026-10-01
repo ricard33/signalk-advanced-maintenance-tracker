@@ -1,3 +1,26 @@
+# v1.9.0
+
+The whole maintenance programme on one page, and the webapp in French.
+
+## Highlights
+
+- **Maintenance schedule.** A new **Schedule** page lists every recurring task
+  with its engine-hour and calendar intervals, grouped by equipment, with each
+  task's status and the date it was last done. Equipment and tasks are always
+  in alphabetical order, so the page reads the same on every visit. Past 200
+  tasks, a **Load more tasks** button adds the next batch to the list.
+- **French interface.** The webapp now speaks French as well as English. It
+  follows the browser's language, and an **EN / FR** button in the header
+  switches at any time (remembered per device). Statuses, durations and
+  intervals are translated too. API error messages and the log export headers
+  stay in English.
+
+## Smaller changes and fixes
+
+- The equipment page's task list gains the **Time left** column.
+- The dashboard shows more entries: up to 10 recent log entries, and every
+  overdue / due-soon task it loads instead of the first 3.
+
 # v1.8.0
 
 E-mail alerts for approaching and passed deadlines.
