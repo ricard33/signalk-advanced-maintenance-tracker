@@ -31,7 +31,7 @@ export function DashboardPage() {
   const overdueRes = useTasks({ status: 'overdue', pageSize: 3 });
   const dueSoonRes = useTasks({ status: 'due_soon', pageSize: 3 });
   const equipmentRes = useEquipmentList({ pageSize: 1 });
-  const logsRes = useLogs({ pageSize: 3 });
+  const logsRes = useLogs({ pageSize: 10 });
 
   const overdue = overdueRes.data ? overdueRes.data.total : 0;
   const dueSoon = dueSoonRes.data ? dueSoonRes.data.total : 0;
@@ -39,7 +39,7 @@ export function DashboardPage() {
 
   const nextUp = (overdueRes.data ? overdueRes.data.data : [])
     .concat(dueSoonRes.data ? dueSoonRes.data.data : [])
-    .slice(0, 3);
+    .slice(0, 10);
   const logs = logsRes.data ? logsRes.data.data : [];
 
   return html`
