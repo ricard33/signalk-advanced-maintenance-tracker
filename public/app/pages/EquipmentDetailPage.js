@@ -17,6 +17,7 @@ import {
   formatDate,
   formatHours,
   formatRemainingHours,
+  formatRemainingTime,
 } from '../lib/format.js';
 import { navigate } from '../lib/router.js';
 import { toast } from '../lib/toasts.js';
@@ -83,6 +84,15 @@ export function EquipmentDetailPage(props) {
       render: (/** @type {TaskDTO} */ t) =>
         html`<span class=${'remaining ' + (t.runtime_status || '')}
           >${formatRemainingHours(t.remaining_runtime)}</span
+        >`,
+    },
+    {
+      key: 'remaining_time',
+      label: 'Time left',
+      className: 'num hide-sm',
+      render: (/** @type {TaskDTO} */ t) =>
+        html`<span class=${'remaining ' + (t.time_status || '')}
+          >${formatRemainingTime(t.remaining_time_ms)}</span
         >`,
     },
   ];

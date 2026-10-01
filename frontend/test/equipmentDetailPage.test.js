@@ -104,6 +104,13 @@ describe('EquipmentDetailPage (§7.4)', () => {
     ).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Tasks (1)')).toBeTruthy();
     expect(screen.getByText('Log entries (1)')).toBeTruthy();
+    // the task table carries both remaining dimensions
+    expect(
+      screen.getByRole('columnheader', { name: 'Runtime Left' }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('columnheader', { name: 'Time left' }),
+    ).toBeTruthy();
   });
 
   it('logged in: Delete confirms and navigates back to the list', async () => {
